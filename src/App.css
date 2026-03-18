@@ -1,42 +1,202 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* src/App.css */
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: auto;
+  overflow: auto;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-bar {
+  border-bottom: 1px solid #e2e8f0 !important;
+  background-color: #2563eb !important;
+  flex: 0 0 auto !important;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.app-bar-icon {
+  margin-right: 16px;
+}
+
+.app-bar-title {
+  flex-grow: 1;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: visible;
+}
+
+.top-section-grid {
+  height: auto;
+  min-height: auto;
+  flex: none;
+}
+
+.panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+}
+
+.panel-header-bg-slate {
+  background-color: #f1f5f9;
+}
+.panel-header-bg-light {
+  background-color: #f8fafc;
+}
+.panel-header-bg-green {
+  background-color: #ecfdf5;
+  border-bottom: 1px solid #d1fae5;
+}
+.panel-header-bg-blue {
+  background-color: #eff6ff;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.panel-icon {
+  margin-right: 8px;
+  color: #475569;
+}
+
+.panel-content {
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.panel-content-white {
+  background-color: #ffffff;
+  padding: 16px;
+}
+.panel-content-green {
+  background-color: #f2fdf7;
+  padding: 16px;
+}
+.panel-content-blue {
+  background-color: #f8fafc;
+  padding: 16px;
+}
+
+.text-field-container {
+  flex-grow: 1;
+  overflow: auto;
+}
+.text-field-container .MuiInputBase-root {
+  height: 100%;
+  padding: 16px !important;
+  font-family: 'Fira Code', 'Courier New', monospace !important;
+  font-size: 14px !important;
+  align-items: flex-start !important;
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.run-btn {
+  padding: 8px 32px !important;
+  font-size: 15px !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16) !important;
+}
+
+.alert-error {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  align-items: center !important;
+}
+
+.bottom-section-grid {
+  flex-grow: 1;
+  overflow: visible;
+}
+
+.panel-ast {
+  border-top: 4px solid #64748b;
+}
+.panel-result {
+  border-top: 4px solid #10b981;
+}
+.panel-code {
+  border-top: 4px solid #3b82f6;
+}
+
+.pre-code {
+  margin: 0;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.pre-code-ast {
+  color: #334155;
+}
+.pre-code-result {
+  color: #065f46;
+}
+.pre-code-js {
+  color: #1e40af;
+}
+
+/* MUI "md" Breakpoint (>= 900px) */
+@media (min-width: 900px) {
+  .app-container {
+    height: 100vh;
+    overflow: hidden;
   }
-  to {
-    transform: rotate(360deg);
+
+  .main-content {
+    overflow: hidden;
+  }
+
+  .top-section-grid {
+    height: 40%;
+    min-height: 200px;
+    flex: 0 0 auto;
+  }
+
+  .panel-top {
+    height: 100%;
+  }
+
+  .panel-bottom {
+    height: 100%;
+  }
+
+  .bottom-section-grid {
+    overflow: hidden;
+  }
+
+  .grid-item-height {
+    height: 100%;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+/* Mobile Breakpoint (< 900px) */
+@media (max-width: 899.95px) {
+  .panel-top {
+    height: 300px;
   }
-}
 
-.card {
-  padding: 2em;
-}
+  .panel-bottom {
+    height: 400px;
+  }
 
-.read-the-docs {
-  color: #888;
+  .grid-item-height {
+    height: auto;
+  }
 }
