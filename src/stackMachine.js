@@ -1,6 +1,6 @@
 const PRECEDENCE = {
-  '&&': 1,
   '||': 1,
+  '&&': 2,
   '==': 2,
   '!=': 2,
   '<': 3,
@@ -54,9 +54,11 @@ export const evaluateExpression = (expr, context) => {
   const stack = [];
   for (let t of rpn) {
     if (typeof t === 'number' || typeof t === 'boolean') stack.push(t);
-    else if (t.var)
-      stack.push(context[t.var] !== undefined ? context[t.var] : 0);
-    else {
+    else if (t.var) {
+      if (context[t.var] === undefined)
+        throw new Error(`Undefined variable: "${t.var}"`);
+      stack.push(context[t.var]);
+    } else {
       if (t === 'Math.sqrt') {
         const a = stack.pop();
         stack.push(Math.sqrt(a));

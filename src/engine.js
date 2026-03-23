@@ -29,7 +29,7 @@ export const preprocessDSL = (text) => {
       .replace(/\bOR\b/g, '||')
 
       // 1.3 Unary minus fix. Appends '0-' to negative numbers starting an expression.
-      .replace(/([=([{,])\s*-/g, '$1 0-')
+      .replace(/([=([{,]|&&|\|\|)\s*-/g, '$1 0-')
       .replace(/^\s*-/g, '0-')
 
       // 1.4 Native Mathematical functions
@@ -126,7 +126,8 @@ export const parseDSL = (input) => {
 };
 
 // 3. RECURSIVE INTERPRETER: Evaluates the AST against the given context
-export const executeAST = (nodes, context) => {
+// Returns true if a 'stop' was hit, false otherwise.
+const executeASTInner = (nodes, context) => {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
 
@@ -135,8 +136,8 @@ export const executeAST = (nodes, context) => {
 
       if (isTrue) {
         // If condition is true, execute block body recursively
-        const stopSignal = executeAST(node.body, context);
-        if (stopSignal) return context; // Halt execution flag
+        const stopped = executeASTInner(node.body, context);
+        if (stopped) return true; // Propagate halt signal
       }
     } else if (node.type === AST_TYPES.STATEMENT) {
       const acts = node.expression
@@ -145,7 +146,7 @@ export const executeAST = (nodes, context) => {
         .filter(Boolean);
 
       for (let act of acts) {
-        if (act === 'stop') return context; // Halt execution flag
+        if (act === 'stop') return true; // Halt signal
 
         if (act.includes('=')) {
           const parts = act.split('=');
@@ -156,6 +157,11 @@ export const executeAST = (nodes, context) => {
       }
     }
   }
+  return false; // No stop hit
+};
+
+export const executeAST = (nodes, context) => {
+  executeASTInner(nodes, context);
   return context;
 };
 
