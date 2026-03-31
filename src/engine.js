@@ -49,6 +49,16 @@ export const preprocessDSL = (text) => {
 export const parseDSL = (input) => {
   const cleanInput = preprocessDSL(input);
 
+  // True when 'kw' appears as a standalone word at position pos (not inside an identifier)
+  const isKeyword = (s, pos, kw) => {
+    const end = pos + kw.length;
+    return (
+      s.substring(pos, end) === kw &&
+      (pos === 0 || !/\w/.test(s[pos - 1])) &&
+      (end >= s.length || !/\w/.test(s[end]))
+    );
+  };
+
   const parseStream = (str) => {
     const nodes = [];
     let i = 0;
@@ -112,11 +122,33 @@ export const parseDSL = (input) => {
         } else {
           nodes.push(...contentNodes);
         }
-      } // Skip 'OR' keyword. Array structure implies independent sequential block execution.
-      else if (str.substring(i, i + 2).toUpperCase() === 'OR') {
-        i += 2;
+      } // Skip block separator keywords: U (union), X (sequential composition), OR
+      else if (
+        isKeyword(str, i, 'U') ||
+        isKeyword(str, i, 'X') ||
+        isKeyword(str, i, 'OR') ||
+        isKeyword(str, i, 'or')
+      ) {
+        i += str[i] === 'U' || str[i] === 'X' ? 1 : 2;
       } else {
-        i++;
+        // Collect plain statement text until the next block delimiter or separator keyword
+        let start = i;
+        while (
+          i < str.length &&
+          str[i] !== '{' &&
+          str[i] !== '[' &&
+          !isKeyword(str, i, 'U') &&
+          !isKeyword(str, i, 'OR') &&
+          !isKeyword(str, i, 'or')
+        )
+          i++;
+        const stmt = str
+          .substring(start, i)
+          .trim()
+          .replace(/\bX\b\s*$/, '') // strip trailing X (composition op before a block)
+          .replace(/[,;]+$/, '')
+          .trim();
+        if (stmt) nodes.push({ type: AST_TYPES.STATEMENT, expression: stmt });
       }
     }
     return nodes;
@@ -128,14 +160,18 @@ export const parseDSL = (input) => {
 // 3. RECURSIVE INTERPRETER: Evaluates the AST against the given context
 // Returns true if a 'stop' was hit, false otherwise.
 const executeASTInner = (nodes, context) => {
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
+  let anyFired = false; // tracks whether any block at this level has executed
 
+  for (const node of nodes) {
     if (node.type === AST_TYPES.BLOCK) {
-      const isTrue = evaluateExpression(node.condition, context);
+      // {otherwise} fires only when no sibling block at this level has fired yet
+      const isTrue =
+        node.condition === 'otherwise'
+          ? !anyFired
+          : evaluateExpression(node.condition, context);
 
       if (isTrue) {
-        // If condition is true, execute block body recursively
+        anyFired = true;
         const stopped = executeASTInner(node.body, context);
         if (stopped) return true; // Propagate halt signal
       }
@@ -187,7 +223,9 @@ export const generateCode = (nodes, level = 1, isRoot = true) => {
     const node = nodes[i];
 
     if (node.type === AST_TYPES.BLOCK) {
-      code += `${indent}if (${prefixVars(node.condition)}) {\n`;
+      const cond =
+        node.condition === 'otherwise' ? 'true' : prefixVars(node.condition);
+      code += `${indent}if (${cond}) {\n`;
       code += generateCode(node.body, level + 1, false); // Recursive code generation
       code += `${indent}}\n`;
     } else if (node.type === AST_TYPES.STATEMENT) {
