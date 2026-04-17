@@ -1,196 +1,108 @@
-import { useState } from "react";
-import { StackParser } from "./stackParser";
-import type { OperationStep, StackSnapshot } from "./stackParser";
-import { StackDiagram } from "./StackDiagram";
-import "./App.css";
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { ReactFlowProvider } from '@xyflow/react'
+import { useTranslation } from 'react-i18next'
+import { Editor } from './components/Editor'
+import { TabPanel } from './components/TabPanel'
+import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { parsePredicates } from './services/predicateParser'
+import { generateCpp } from './services/codeGenerator'
+import { EXAMPLES } from './utils/examples'
+import type { ParseResult, GeneratedCode } from './types'
 
-interface ContextEntry {
-  id: number;
-  key: string;
-  value: string;
-}
+export default function App() {
+  const { t } = useTranslation()
+  const [text, setText] = useState(EXAMPLES.sign)
+  const [result, setResult] = useState<ParseResult | null>(null)
+  const [generated, setGenerated] = useState<GeneratedCode | null>(null)
+  const [isRunning, setIsRunning] = useState(false)
+  const [splitPct, setSplitPct] = useState(38)
 
-let idCounter = 1;
+  const containerRef = useRef<HTMLDivElement>(null)
+  const dragging = useRef(false)
 
-function App() {
-  const [expression, setExpression] = useState("a + b * (c - d)");
-  const [contextEntries, setContextEntries] = useState<ContextEntry[]>([
-    { id: idCounter++, key: "a", value: "2" },
-    { id: idCounter++, key: "b", value: "3" },
-    { id: idCounter++, key: "c", value: "10" },
-    { id: idCounter++, key: "d", value: "4" },
-  ]);
-  const [steps, setSteps] = useState<OperationStep[]>([]);
-  const [result, setResult] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [snapshots, setSnapshots] = useState<StackSnapshot[]>([]);
-  const [parsedTokens, setParsedTokens] = useState<string[]>([]);
+  function handleRun() {
+    setIsRunning(true)
+    setTimeout(() => {
+      const parsed = parsePredicates(text)
+      const code = generateCpp(parsed.model)
+      setResult(parsed)
+      setGenerated(code)
+      setIsRunning(false)
+    }, 40)
+  }
 
-  const addContextEntry = () => {
-    setContextEntries((prev) => [
-      ...prev,
-      { id: idCounter++, key: "", value: "" },
-    ]);
-  };
+  const onMouseDown = useCallback(() => { dragging.current = true }, [])
 
-  const removeContextEntry = (id: number) => {
-    setContextEntries((prev) => prev.filter((e) => e.id !== id));
-  };
-
-  const updateEntry = (id: number, field: "key" | "value", val: string) => {
-    setContextEntries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, [field]: val } : e)),
-    );
-  };
-
-  const handleCalculate = () => {
-    setError(null);
-    setSteps([]);
-    setResult(null);
-
-    const context: Record<string, number> = {};
-    for (const entry of contextEntries) {
-      const k = entry.key.trim();
-      const v = parseFloat(entry.value);
-      if (k && !isNaN(v)) {
-        context[k] = v;
-      }
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!dragging.current || !containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const pct = ((e.clientX - rect.left) / rect.width) * 100
+      setSplitPct(Math.min(70, Math.max(20, pct)))
     }
-
-    try {
-      const parser = new StackParser(context);
-      const res = parser.parse(expression);
-      setSteps(parser.steps);
-      setResult(res);
-      setSnapshots(parser.snapshots);
-      setParsedTokens(parser.tokens);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    function onUp() { dragging.current = false }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
     }
-  };
+  }, [])
+
+  const statusText = result
+    ? t('status.model', {
+        states: result.model.states.length,
+        transitions: result.model.transitions.length,
+      })
+    : t('status.no_model')
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1 className="subtitle">Стековий алгоритм</h1>
-      </header>
+    <div className="ide-root">
+      {/* Title bar */}
+      <div className="ide-titlebar">
+        <div className="titlebar-left">
+          <span className="app-logo">◈</span>
+          <span className="app-name">{t('app.name')}</span>
+          <span className="app-version">v0.3</span>
+        </div>
+        <div className="titlebar-center">
+          <span className="titlebar-file">{t('app.file')}</span>
+        </div>
+        <div className="titlebar-right">
+          <span className="titlebar-link">{t('app.subtitle')}</span>
+          <div className="titlebar-divider" />
+          <LanguageSwitcher />
+        </div>
+      </div>
 
-      <main className="app-main">
-        <section className="card">
-          <h2>Вираз (модель)</h2>
-          <input
-            className="expr-input"
-            type="text"
-            value={expression}
-            onChange={(e) => setExpression(e.target.value)}
-            placeholder="Наприклад: a + b * (c - d)"
-            spellCheck={false}
-          />
-          <p className="hint">Підтримуються оператори: + − * / та дужки</p>
-        </section>
+      {/* Main split */}
+      <div className="ide-workspace" ref={containerRef}>
+        <div className="ide-editor-pane" style={{ width: `${splitPct}%` }}>
+          <Editor value={text} onChange={setText} onRun={handleRun} />
+        </div>
 
-        <section className="card">
-          <h2>Контекст (значення змінних)</h2>
-          <div className="context-list">
-            {contextEntries.map((entry) => (
-              <div key={entry.id} className="context-row">
-                <input
-                  className="ctx-key"
-                  type="text"
-                  placeholder="Змінна"
-                  value={entry.key}
-                  onChange={(e) => updateEntry(entry.id, "key", e.target.value)}
-                />
-                <span className="ctx-eq">=</span>
-                <input
-                  className="ctx-val"
-                  type="number"
-                  placeholder="Значення"
-                  value={entry.value}
-                  onChange={(e) =>
-                    updateEntry(entry.id, "value", e.target.value)
-                  }
-                />
-                <button
-                  className="btn-remove"
-                  onClick={() => removeContextEntry(entry.id)}
-                  title="Видалити"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-          <button className="btn-add" onClick={addContextEntry}>
-            + Додати змінну
-          </button>
-        </section>
+        <div className="ide-resizer" onMouseDown={onMouseDown}>
+          <div className="resizer-handle" />
+        </div>
 
-        <button className="btn-calc" onClick={handleCalculate}>
-          Обчислити
-        </button>
+        <div className="ide-output-pane" style={{ width: `${100 - splitPct}%` }}>
+          <ReactFlowProvider>
+          <TabPanel result={result} generated={generated} isRunning={isRunning} />
+        </ReactFlowProvider>
+        </div>
+      </div>
 
-        {error && (
-          <div className="error-box">
-            <strong>Помилка:</strong> {error}
-          </div>
-        )}
-
-        {steps.length > 0 && (
-          <section className="card results">
-            <h2>Покрокове виконання</h2>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Операнд 1</th>
-                    <th>Оператор</th>
-                    <th>Операнд 2</th>
-                    <th>Тимчасова зм.</th>
-                    <th>Обчислення</th>
-                    <th>Результат</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {steps.map((step, i) => (
-                    <tr key={i}>
-                      <td>{i + 1}</td>
-                      <td>
-                        <code>{step.data1}</code>
-                      </td>
-                      <td>
-                        <code className="op">{step.op}</code>
-                      </td>
-                      <td>
-                        <code>{step.data2}</code>
-                      </td>
-                      <td>
-                        <code className="temp">{step.temp}</code>
-                      </td>
-                      <td className="calc-cell">
-                        {step.val1} {step.op} {step.val2}
-                      </td>
-                      <td className="result-cell">{step.result}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {result !== null && (
-              <div className="final-result">
-                <span className="final-label">Підсумок:</span>
-                <span className="final-value">{result}</span>
-              </div>
-            )}
-          </section>
-        )}
-
-        <StackDiagram tokens={parsedTokens} snapshots={snapshots} />
-      </main>
+      {/* Status bar */}
+      <div className="ide-statusbar">
+        <span className="status-item">
+          <span className="status-dot status-dot-ok" />
+          {t('status.ready')}
+        </span>
+        <span className="status-sep" />
+        <span className="status-item">{statusText}</span>
+        <div className="status-spacer" />
+        <span className="status-item">ЧДТУ · Ємелянов С.А.</span>
+      </div>
     </div>
-  );
+  )
 }
-
-export default App;
