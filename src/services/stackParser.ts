@@ -5,16 +5,18 @@ import type { StackStep, ExpressionAnalysis } from '../types'
 // Priority for comparison inside the stack
 const STACK_PRIORITY: Record<string, number> = {
   '+': 1, '-': 1, '*': 2, '/': 2, '(': 0,
+  'u+': 3, 'u-': 3,   // unary: higher than binary, right-associative
 }
 
 // Priority on entry (left paren has highest entry priority)
 const ENTRY_PRIORITY: Record<string, number> = {
   '+': 1, '-': 1, '*': 2, '/': 2, '(': 3,
+  'u+': 4, 'u-': 4,   // unary: entry > stack → right-associative
 }
 
 // ── Token types ───────────────────────────────────────────────────────────────
 
-type TokenKind = 'data' | 'action' | 'rparen'
+type TokenKind = 'data' | 'action' | 'unary' | 'rparen'
 
 interface Token {
   val: string
@@ -42,7 +44,11 @@ function tokenize(expr: string): Token[] {
     }
 
     if (expr[i] in STACK_PRIORITY) {
-      tokens.push({ val: expr[i], kind: 'action' })
+      const prev = tokens[tokens.length - 1]
+      const isUnary =
+        (expr[i] === '-' || expr[i] === '+') &&
+        (!prev || prev.kind === 'action' || prev.kind === 'unary')
+      tokens.push({ val: expr[i], kind: isUnary ? 'unary' : 'action' })
       i++; continue
     }
 
@@ -79,16 +85,27 @@ function runStackAlgorithm(expr: string): StackAlgorithmResult {
   const dataStackStr = () =>
     dataStack.length ? '[' + dataStack.join(', ') + ']' : '[]'
 
-  // Pop operator from actionStack, pop two operands, push temp
-  function processTop(): { op: string; a: string; b: string; result: string; line: string } {
-    const op = actionStack.pop()!
-    const b = dataStack.pop() ?? '?'
-    const a = dataStack.pop() ?? '?'
-    const t = newTemp()
-    const line = `${a} ${op} ${b} = ${t}`
-    intermediateCode.push(line)
-    dataStack.push(t)
-    return { op, a, b, result: t, line }
+  // Pop operator from actionStack, pop operand(s), push temp
+  function processTop(): { op: string; result: string; line: string } {
+    const stackOp = actionStack.pop()!
+    const isUnary = stackOp === 'u-' || stackOp === 'u+'
+    const op = isUnary ? stackOp[1] : stackOp
+    let line: string
+    if (isUnary) {
+      const a = dataStack.pop() ?? '?'
+      const t = newTemp()
+      line = `${op}${a} = ${t}`
+      intermediateCode.push(line)
+      dataStack.push(t)
+    } else {
+      const b = dataStack.pop() ?? '?'
+      const a = dataStack.pop() ?? '?'
+      const t = newTemp()
+      line = `${a} ${op} ${b} = ${t}`
+      intermediateCode.push(line)
+      dataStack.push(t)
+    }
+    return { op, result: dataStack[dataStack.length - 1], line }
   }
 
   function pushStep(pair: string, action: string, code: string) {
@@ -164,6 +181,17 @@ function runStackAlgorithm(expr: string): StackAlgorithmResult {
         i++
       }
 
+    // ── Unary operator ────────────────────────────────────────
+    } else if (tok.kind === 'unary') {
+      const op = 'u' + tok.val   // 'u-' or 'u+'
+      actionStack.push(op)
+      pushStep(
+        tok.val + (nextTok ? ` ${nextTok.val}` : ''),
+        `унарний ${tok.val}: пріоритет входу=${ENTRY_PRIORITY[op]} → оператор у стек`,
+        '—',
+      )
+      i++
+
     // ── Left paren ────────────────────────────────────────────
     } else if (tok.kind === 'action' && tok.val === '(') {
       actionStack.push('(')
@@ -189,6 +217,30 @@ function runStackAlgorithm(expr: string): StackAlgorithmResult {
       if (actionStack.length) {
         actionStack.pop()
         pushStep(') [права дужка]', 'знищуємо пару дужок', '—')
+      }
+      i++
+
+    // ── Standalone operator (e.g. after closing paren) ───────────
+    } else if (tok.kind === 'action' && tok.val !== '(') {
+      const op = tok.val
+      const prIn = ENTRY_PRIORITY[op]
+
+      if (
+        actionStack.length === 0 ||
+        prIn > STACK_PRIORITY[actionStack[actionStack.length - 1]]
+      ) {
+        actionStack.push(op)
+        pushStep(op, `пріоритет(${op})=${prIn} > пріоритет стеку → оператор у стек`, '—')
+      } else {
+        while (
+          actionStack.length &&
+          STACK_PRIORITY[actionStack[actionStack.length - 1]] >= prIn
+        ) {
+          const proc = processTop()
+          pushStep(op, `пріоритет(${op})=${prIn} <= стек → виштовхуємо '${proc.op}'`, proc.line)
+        }
+        actionStack.push(op)
+        pushStep(op, `оператор '${op}' → стек`, '—')
       }
       i++
 
