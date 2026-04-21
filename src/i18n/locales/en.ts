@@ -56,6 +56,7 @@ export default {
     main: {
       id: 'Id_state',
       type: 'Type',
+      label: 'Label',
       actions: 'List_of_actions',
       mark: 'Mark',
     },

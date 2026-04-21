@@ -24,6 +24,7 @@ export function MainTable({ states }: MainTableProps) {
         <tr>
           <th>{t('table.main.id')}</th>
           <th>{t('table.main.type')}</th>
+          <th>{t('table.main.label')}</th>
           <th>{t('table.main.actions')}</th>
           <th>{t('table.main.mark')}</th>
         </tr>
@@ -37,6 +38,7 @@ export function MainTable({ states }: MainTableProps) {
                 {t(`state_type.${s.type}`)}
               </span>
             </td>
+            <td>{s.label ? `:${s.label}` : '—'}</td>
             <td>{s.actions || '—'}</td>
             <td className={s.mark ? 'mark-true' : 'mark-false'}>
               {String(s.mark)}

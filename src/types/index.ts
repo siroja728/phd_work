@@ -5,7 +5,8 @@ export type StateType = 'initial' | 'final' | 'normal'
 export interface AutomatonState {
   id: number
   type: StateType
-  actions: string     // List_of_actions (raw string from predicate)
+  label: string | null  // :name mark used for goto targeting
+  actions: string       // List_of_actions (raw string from predicate)
   mark: boolean
 }
 

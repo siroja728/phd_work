@@ -1,13 +1,42 @@
-import type { ParsedPredicate, ParseResult, AutomatonState, AutomatonTransition } from '../types'
+import type { ParseResult, AutomatonState, AutomatonTransition } from '../types'
 import { analyzeExpressions } from './stackParser'
 
-// Parse a single line: "{ condition } [ actions ]"
-function parseLine(line: string): ParsedPredicate {
-  const condMatch = line.match(/\{([^}]*)\}/)
-  const actMatch  = line.match(/\[([^\]]*)\]/)
+interface RawPredicate {
+  label: string | null
+  condition: string
+  actions: string    // goto-stripped, ready for model
+  gotos: string[]    // label names extracted from goto statements
+}
+
+function parseLine(line: string): RawPredicate {
+  // Optional :label prefix
+  const labelMatch = line.match(/^:(\w+)\s+(.*)$/)
+  const label = labelMatch ? labelMatch[1] : null
+  const rest  = labelMatch ? labelMatch[2] : line
+
+  const condMatch = rest.match(/\{([^}]*)\}/)
+  const actMatch  = rest.match(/\[([^\]]*)\]/)
+  const raw = actMatch ? actMatch[1] : ''
+
+  // Extract all goto targets
+  const gotos: string[] = []
+  const gotoRe = /\bgoto\s+(\w+)/g
+  let m: RegExpExecArray | null
+  while ((m = gotoRe.exec(raw)) !== null) gotos.push(m[1])
+
+  // Strip goto statements from actions
+  const actions = raw
+    .replace(/\bgoto\s+\w+/g, '')
+    .split(';')
+    .map(a => a.trim())
+    .filter(Boolean)
+    .join('; ')
+
   return {
+    label,
     condition: condMatch ? condMatch[1].trim() : 'true',
-    actions:   actMatch  ? actMatch[1].trim()  : '',
+    actions,
+    gotos,
   }
 }
 
@@ -22,34 +51,45 @@ export function parsePredicates(text: string): ParseResult {
   }
 
   const parsed = lines.map(parseLine)
+  const n = parsed.length
+
+  // Build label → stateId map (id = index + 1)
+  const labelMap = new Map<string, number>()
+  for (let i = 0; i < n; i++) {
+    if (parsed[i].label) labelMap.set(parsed[i].label!, i + 1)
+  }
+
   const states: AutomatonState[] = []
   const transitions: AutomatonTransition[] = []
 
-  // First predicate → initial state (id = 1)
-  states.push({
-    id: 1,
-    type: 'initial',
-    actions: parsed[0].actions,
-    mark: false,
-  })
+  for (let i = 0; i < n; i++) {
+    const p = parsed[i]
+    const id = i + 1
 
-  // Remaining predicates → final states
-  for (let i = 1; i < parsed.length; i++) {
-    states.push({
-      id: i + 1,
-      type: 'final',
-      actions: parsed[i].actions,
-      mark: false,
-    })
-    // Transition from state 1 to each final state
-    transitions.push({
-      from: 1,
-      condition: parsed[i].condition,
-      to: i + 1,
-    })
+    // Final = last state with no goto (no outgoing transitions)
+    const type =
+      i === 0                               ? 'initial' :
+      i === n - 1 && p.gotos.length === 0  ? 'final'   :
+                                              'normal'
+
+    states.push({ id, type, label: p.label, actions: p.actions, mark: false })
+
+    // Sequential incoming transition from state id-1 → id
+    if (i > 0) {
+      transitions.push({ from: id - 1, condition: p.condition, to: id })
+    }
+
+    // Goto transitions FROM this state, using this state's own condition.
+    // The sequential outgoing (to id+1) uses the NEXT predicate's condition,
+    // so goto and sequential are naturally complementary when designed correctly.
+    for (const target of p.gotos) {
+      const toId = labelMap.get(target)
+      if (toId !== undefined) {
+        transitions.push({ from: id, condition: p.condition, to: toId })
+      }
+    }
   }
 
-  // Run stack algorithm on expressions found in any state's actions
   const exprAnalysis = states.flatMap(s =>
     s.actions ? analyzeExpressions(s.actions) : []
   )

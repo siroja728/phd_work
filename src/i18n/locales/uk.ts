@@ -49,6 +49,7 @@ export default {
     main: {
       id: 'Id_state',
       type: 'Type',
+      label: 'Мітка',
       actions: 'List_of_actions',
       mark: 'Mark',
     },
