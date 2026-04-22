@@ -37,8 +37,7 @@ export function StackTracePanel({ analysis }: StackTracePanelProps) {
                       <th>{t('stack.col_step')}</th>
                       <th>{t('stack.col_pair')}</th>
                       <th>{t('stack.col_action')}</th>
-                      <th>{t('stack.col_action_stack')}</th>
-                      <th>{t('stack.col_operand_stack')}</th>
+                      <th>{t('stack.col_pair_stack')}</th>
                       <th>{t('stack.col_code')}</th>
                     </tr>
                   </thead>
@@ -48,8 +47,7 @@ export function StackTracePanel({ analysis }: StackTracePanelProps) {
                         <td className="cell-muted">{s.step}</td>
                         <td className="cell-data">{s.pair}</td>
                         <td className="cell-action">{s.action}</td>
-                        <td className="cell-stack">{s.actionStack}</td>
-                        <td className="cell-operand">{s.dataStack}</td>
+                        <td className="cell-stack">{s.pairStack}</td>
                         <td className={s.code !== '—' ? 'cell-code' : 'cell-muted'}>
                           {s.code}
                         </td>

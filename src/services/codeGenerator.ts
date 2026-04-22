@@ -1,18 +1,61 @@
 import type { AutomatonModel, GeneratedCode } from '../types'
+import { analyzeExpressions } from './stackParser'
 
 // ── Action translation ────────────────────────────────────────────────────────
 
 function translateAction(act: string): string {
-  // read(x) → cin >> x
   const readMatch = act.match(/^read\((.+)\)$/)
   if (readMatch) return `cin >> ${readMatch[1]}`
 
-  // print("...") or print(expr) → cout << ... << endl
   const printMatch = act.match(/^print\((.+)\)$/)
   if (printMatch) return `cout << ${printMatch[1]} << endl`
 
-  // assignment — keep as-is
   return act
+}
+
+// Expand all actions for one state into C++ lines.
+// Arithmetic assignments are replaced with intermediate-code steps;
+// simple assignments and read/print pass through unchanged.
+function expandActions(actionsStr: string): string[] {
+  const acts = actionsStr.split(';').map(a => a.trim()).filter(Boolean)
+  const analyses = analyzeExpressions(actionsStr)   // threaded temps within state
+  const lines: string[] = []
+  let analysisIdx = 0
+
+  for (const act of acts) {
+    const readMatch = act.match(/^read\((.+)\)$/)
+    if (readMatch) { lines.push(`cin >> ${readMatch[1]}`); continue }
+
+    const printMatch = act.match(/^print\((.+)\)$/)
+    if (printMatch) { lines.push(`cout << ${printMatch[1]} << endl`); continue }
+
+    const eqIdx = act.indexOf('=')
+    if (eqIdx >= 0 && analysisIdx < analyses.length) {
+      const lhs = act.slice(0, eqIdx).trim()
+      const rhs = act.slice(eqIdx + 1).trim()
+      if (/[+\-*/()]/.test(rhs)) {
+        const { intermediateCode } = analyses[analysisIdx++]
+        if (intermediateCode.length === 1) {
+          // Single operation — assign directly, no temp needed
+          const eqPos = intermediateCode[0].lastIndexOf('=')
+          lines.push(`${lhs} = ${intermediateCode[0].slice(0, eqPos).trim()}`)
+        } else {
+          // Multiple steps — emit temp vars then final assignment
+          for (let i = 0; i < intermediateCode.length; i++) {
+            const eqPos = intermediateCode[i].lastIndexOf('=')
+            const expr = intermediateCode[i].slice(0, eqPos).trim()
+            const temp = intermediateCode[i].slice(eqPos + 1).trim()
+            lines.push(i < intermediateCode.length - 1 ? `int ${temp} = ${expr}` : `${lhs} = ${expr}`)
+          }
+        }
+        continue
+      }
+    }
+
+    lines.push(translateAction(act))
+  }
+
+  return lines
 }
 
 // ── Condition translation ─────────────────────────────────────────────────────
@@ -94,14 +137,10 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
     lines.push(`                }`)
     lines.push(`                mark[${state.id}] = true;`)
 
-    // Actions
+    // Actions (arithmetic expanded via intermediate code)
     if (state.actions) {
-      const acts = state.actions
-        .split(';')
-        .map(a => a.trim())
-        .filter(Boolean)
-      for (const act of acts) {
-        lines.push(`                ${translateAction(act)};`)
+      for (const line of expandActions(state.actions)) {
+        lines.push(`                ${line};`)
       }
     }
 

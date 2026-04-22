@@ -25,11 +25,10 @@ export interface AutomatonModel {
 
 export interface StackStep {
   step: number
-  pair: string          // поточна пара лексем
-  action: string        // що відбувається
-  actionStack: string   // стек операторів (рядковий вигляд)
-  dataStack: string     // стек операндів (рядковий вигляд)
-  code: string          // згенерований рядок проміжного коду або '—'
+  pair: string       // поточна пара лексем
+  action: string     // що відбувається
+  pairStack: string  // стек пар лексем (рядковий вигляд)
+  code: string       // згенерований рядок проміжного коду або '—'
 }
 
 export interface ExpressionAnalysis {
