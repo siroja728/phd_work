@@ -16,9 +16,16 @@ export interface AutomatonTransition {
   to: number
 }
 
+export interface MemoEntry {
+  stateId: number
+  sem: string       // semaphore name
+  resource: string  // subroutine name
+}
+
 export interface AutomatonModel {
   states: AutomatonState[]
   transitions: AutomatonTransition[]
+  memo: MemoEntry[]
 }
 
 // ── Stack algorithm types ─────────────────────────────────────────────────────

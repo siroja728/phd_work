@@ -26,6 +26,7 @@ export default {
   tabs: {
     main:    'MAIN',
     connect: 'CONNECT',
+    memo:    'MEMO',
     stack:   'Stack Trace',
     graph:   'Граф',
     output:  'C++ Код',
@@ -57,6 +58,11 @@ export default {
       from: 'Id_state (current)',
       condition: 'Condition',
       to: 'Next_Id_state',
+    },
+    memo: {
+      state: 'Id_state (current)',
+      sem: 'Sem',
+      resource: 'Resource',
     },
   },
 

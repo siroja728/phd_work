@@ -110,6 +110,9 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
   const markReset =
     states.map(s => `mark[${s.id}]`).join(' = ') + ' = false;'
 
+  // Collect unique semaphore names
+  const semNames = [...new Set(model.memo.map(e => e.sem))]
+
   const lines: string[] = []
 
   lines.push('#include <iostream>')
@@ -117,6 +120,11 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
   lines.push('using namespace std;')
   lines.push('')
   lines.push(`bool mark[${n + 1}] = {${Array(n + 1).fill('false').join(', ')}};`)
+  if (semNames.length > 0) {
+    for (const sem of semNames) {
+      lines.push(`bool ${sem} = false;`)
+    }
+  }
   lines.push('')
   lines.push('int main() {')
   lines.push(varDecl)
@@ -142,6 +150,16 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
       for (const line of expandActions(state.actions)) {
         lines.push(`                ${line};`)
       }
+    }
+
+    // Semaphore: acquire → call resource → release
+    const memoEntry = model.memo.find(e => e.stateId === state.id)
+    if (memoEntry) {
+      lines.push(`                // семафор`)
+      lines.push(`                while (${memoEntry.sem});`)
+      lines.push(`                ${memoEntry.sem} = true;`)
+      lines.push(`                ${memoEntry.resource}();`)
+      lines.push(`                ${memoEntry.sem} = false;`)
     }
 
     // Transitions
