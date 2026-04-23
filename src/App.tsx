@@ -31,7 +31,9 @@ export default function App() {
     }, 40)
   }
 
-  const onMouseDown = useCallback(() => { dragging.current = true }, [])
+  const onMouseDown = useCallback(() => {
+    dragging.current = true
+  }, [])
 
   useEffect(() => {
     function onMove(e: MouseEvent) {
@@ -40,7 +42,9 @@ export default function App() {
       const pct = ((e.clientX - rect.left) / rect.width) * 100
       setSplitPct(Math.min(70, Math.max(20, pct)))
     }
-    function onUp() { dragging.current = false }
+    function onUp() {
+      dragging.current = false
+    }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     return () => {
@@ -87,8 +91,8 @@ export default function App() {
 
         <div className="ide-output-pane" style={{ width: `${100 - splitPct}%` }}>
           <ReactFlowProvider>
-          <TabPanel result={result} generated={generated} isRunning={isRunning} />
-        </ReactFlowProvider>
+            <TabPanel result={result} generated={generated} isRunning={isRunning} />
+          </ReactFlowProvider>
         </div>
       </div>
 

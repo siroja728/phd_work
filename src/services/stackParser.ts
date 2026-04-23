@@ -4,14 +4,24 @@ import type { StackStep, ExpressionAnalysis } from '../types'
 
 // Priority when operator is already on the stack (comparison priority)
 const STACK_PRIORITY: Record<string, number> = {
-  '+': 1, '-': 1, '*': 2, '/': 2, '(': 0,
-  'u+': 3, 'u-': 3,
+  '+': 1,
+  '-': 1,
+  '*': 2,
+  '/': 2,
+  '(': 0,
+  'u+': 3,
+  'u-': 3,
 }
 
 // Priority when operator arrives (entry priority)
 const ENTRY_PRIORITY: Record<string, number> = {
-  '+': 1, '-': 1, '*': 2, '/': 2, '(': 3,
-  'u+': 4, 'u-': 4,
+  '+': 1,
+  '-': 1,
+  '*': 2,
+  '/': 2,
+  '(': 3,
+  'u+': 4,
+  'u-': 4,
 }
 
 // ── Token types ───────────────────────────────────────────────────────────────
@@ -27,20 +37,25 @@ function tokenize(expr: string): Token[] {
   const tokens: Token[] = []
   let i = 0
   while (i < expr.length) {
-    if (/\s/.test(expr[i])) { i++; continue }
+    if (/\s/.test(expr[i])) {
+      i++
+      continue
+    }
 
     if (/[A-Za-z_]/.test(expr[i])) {
       let j = i
       while (j < expr.length && /[A-Za-z0-9_]/.test(expr[j])) j++
       tokens.push({ val: expr.slice(i, j), kind: 'data' })
-      i = j; continue
+      i = j
+      continue
     }
 
     if (/\d/.test(expr[i])) {
       let j = i
       while (j < expr.length && /[\d.]/.test(expr[j])) j++
       tokens.push({ val: expr.slice(i, j), kind: 'data' })
-      i = j; continue
+      i = j
+      continue
     }
 
     if (expr[i] in STACK_PRIORITY) {
@@ -49,12 +64,14 @@ function tokenize(expr: string): Token[] {
         (expr[i] === '-' || expr[i] === '+') &&
         (!prev || prev.kind === 'action' || prev.kind === 'unary')
       tokens.push({ val: expr[i], kind: isUnary ? 'unary' : 'action' })
-      i++; continue
+      i++
+      continue
     }
 
     if (expr[i] === ')') {
       tokens.push({ val: ')', kind: 'rparen' })
-      i++; continue
+      i++
+      continue
     }
 
     i++
@@ -65,8 +82,8 @@ function tokenize(expr: string): Token[] {
 // ── Pair stack entry ──────────────────────────────────────────────────────────
 
 interface Pair {
-  data: string | null   // null for '(' placeholder
-  op: string            // operator stored as 'u-'/'u+' for unary
+  data: string | null // null for '(' placeholder
+  op: string // operator stored as 'u-'/'u+' for unary
 }
 
 // ── Stack algorithm ───────────────────────────────────────────────────────────
@@ -82,7 +99,7 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
   const steps: StackStep[] = []
   const intermediateCode: string[] = []
 
-  const stack: Pair[] = []   // single stack of lexeme pairs
+  const stack: Pair[] = [] // single stack of lexeme pairs
   let pendingData: string | null = null
   let tempCount = startTemp
 
@@ -90,7 +107,7 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
 
   const stackStr = () =>
     stack.length
-      ? '[' + stack.map(p => p.data !== null ? `${p.data} ${p.op}` : p.op).join(', ') + ']'
+      ? '[' + stack.map((p) => (p.data !== null ? `${p.data} ${p.op}` : p.op)).join(', ') + ']'
       : '[]'
 
   function pushStep(pair: string, action: string, code: string) {
@@ -152,11 +169,7 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
       // Unary has no data token — push with null data, pendingData stays
       stack.push({ data: null, op })
       const displayOp = op[1]
-      pushStep(
-        pairLabel,
-        `унарний ${displayOp}: пріоритет входу=${prIn} → оператор у стек`,
-        '—',
-      )
+      pushStep(pairLabel, `унарний ${displayOp}: пріоритет входу=${prIn} → оператор у стек`, '—')
     } else {
       stack.push({ data: pendingData, op })
       const displayOp = op.startsWith('u') ? op[1] : op
@@ -183,11 +196,7 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
       pendingData = tok.val
 
       if (!nextTok || nextTok.kind === 'rparen') {
-        pushStep(
-          tok.val + (nextTok ? ' )' : ' <кінець>'),
-          'лексема даних → поточна пара',
-          '—',
-        )
+        pushStep(tok.val + (nextTok ? ' )' : ' <кінець>'), 'лексема даних → поточна пара', '—')
         i++
       } else if (nextTok.kind === 'action') {
         const pairLabel = `${tok.val}  ${nextTok.val}`
@@ -200,13 +209,11 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
       } else {
         i++
       }
-
     } else if (tok.kind === 'unary') {
       const op = 'u' + tok.val
       const pairLabel = tok.val + (nextTok ? ` ${nextTok.val}` : '')
       pushOp(op, pairLabel)
       i++
-
     } else if (tok.kind === 'action') {
       if (tok.val === '(') {
         pushOp('(', '( [ліва дужка]')
@@ -215,7 +222,6 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
         pushOp(tok.val, tok.val)
       }
       i++
-
     } else if (tok.kind === 'rparen') {
       // Pop until matching '('
       while (stack.length > 0 && stack[stack.length - 1].op !== '(') {
@@ -235,7 +241,6 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
         pushStep(') [права дужка]', 'знищуємо пару дужок', '—')
       }
       i++
-
     } else {
       i++
     }
@@ -244,7 +249,10 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
   // Flush remaining pairs
   while (stack.length > 0) {
     const top = stack[stack.length - 1]
-    if (top.op === '(') { stack.pop(); break }
+    if (top.op === '(') {
+      stack.pop()
+      break
+    }
     const displayOp = top.op.startsWith('u') ? top.op[1] : top.op
     const t = popAndGenerate(pendingData!)
     pushStep(
@@ -263,7 +271,10 @@ function runStackAlgorithm(expr: string, startTemp = 0): StackAlgorithmResult {
 export function analyzeExpressions(actionsStr: string, startTemp = 0): ExpressionAnalysis[] {
   const results: ExpressionAnalysis[] = []
   let runningTemp = startTemp
-  const assignments = actionsStr.split(';').map(s => s.trim()).filter(Boolean)
+  const assignments = actionsStr
+    .split(';')
+    .map((s) => s.trim())
+    .filter(Boolean)
 
   for (const assign of assignments) {
     const eqIdx = assign.indexOf('=')
@@ -275,7 +286,7 @@ export function analyzeExpressions(actionsStr: string, startTemp = 0): Expressio
       const { steps, intermediateCode, tempCount } = runStackAlgorithm(rhs, runningTemp)
       if (steps.length > 0) {
         results.push({ expr: `${lhs} = ${rhs}`, steps, intermediateCode, tempCount })
-        runningTemp = tempCount   // thread counter to next expression in same state
+        runningTemp = tempCount // thread counter to next expression in same state
       }
     }
   }

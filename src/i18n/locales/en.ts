@@ -15,25 +15,26 @@ export default {
     lines_many: '{{count}} lines',
     language: 'predicates',
     encoding: 'UTF-8',
-    placeholder: '{ true } [ read(x) ]\n{ x > 0 } [ print("positive") ]\n{ x < 0 } [ print("negative") ]',
+    placeholder:
+      '{ true } [ read(x) ]\n{ x > 0 } [ print("positive") ]\n{ x < 0 } [ print("negative") ]',
   },
 
   // Examples
   examples: {
-    sign:   'number sign',
+    sign: 'number sign',
     minmax: 'min/max',
-    grade:  'grade',
-    expr:   'A*(B+C/D)−E',
+    grade: 'grade',
+    expr: 'A*(B+C/D)−E',
   },
 
   // Tab labels
   tabs: {
-    main:    'MAIN',
+    main: 'MAIN',
     connect: 'CONNECT',
-    memo:    'MEMO',
-    stack:   'Stack Trace',
-    graph:   'Graph',
-    output:  'C++ Output',
+    memo: 'MEMO',
+    stack: 'Stack Trace',
+    graph: 'Graph',
+    output: 'C++ Output',
   },
 
   // Empty state

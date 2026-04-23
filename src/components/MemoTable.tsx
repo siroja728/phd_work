@@ -25,8 +25,12 @@ export function MemoTable({ memo }: MemoTableProps) {
         {memo.map((e, i) => (
           <tr key={i}>
             <td>{e.stateId}</td>
-            <td><code className="condition-code">{e.sem}</code></td>
-            <td><code className="condition-code">{e.resource}</code></td>
+            <td>
+              <code className="condition-code">{e.sem}</code>
+            </td>
+            <td>
+              <code className="condition-code">{e.resource}</code>
+            </td>
           </tr>
         ))}
       </tbody>

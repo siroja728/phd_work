@@ -11,12 +11,12 @@ import { CodeOutputPanel } from './CodeOutputPanel'
 type TabId = 'main' | 'connect' | 'memo' | 'stack' | 'graph' | 'output'
 
 const TAB_ICONS: Record<TabId, string> = {
-  main:    '⊞',
+  main: '⊞',
   connect: '⇄',
-  memo:    '⚙',
-  stack:   '≡',
-  graph:   '◎',
-  output:  '❯',
+  memo: '⚙',
+  stack: '≡',
+  graph: '◎',
+  output: '❯',
 }
 
 const TABS: TabId[] = ['main', 'connect', 'memo', 'stack', 'graph', 'output']
@@ -31,24 +31,23 @@ export function TabPanel({ result, generated, isRunning }: TabPanelProps) {
   const { t } = useTranslation()
   const [active, setActive] = useState<TabId>('output')
 
-  const model = result?.model  ?? { states: [], transitions: [], memo: [] }
+  const model = result?.model ?? { states: [], transitions: [], memo: [] }
   const exprs = result?.exprAnalysis ?? []
 
   function badge(id: TabId): string | null {
     if (!result) return null
-    if (id === 'main')    return String(model.states.length)
+    if (id === 'main') return String(model.states.length)
     if (id === 'connect') return String(model.transitions.length)
-    if (id === 'memo')    return model.memo.length > 0 ? String(model.memo.length) : null
-    if (id === 'stack')   return exprs.length > 0 ? String(exprs.length) : null
+    if (id === 'memo') return model.memo.length > 0 ? String(model.memo.length) : null
+    if (id === 'stack') return exprs.length > 0 ? String(exprs.length) : null
     return null
   }
 
   return (
     <div className="tabpanel-root">
-
       {/* Tab bar */}
       <div className="tab-bar" role="tablist">
-        {TABS.map(id => (
+        {TABS.map((id) => (
           <button
             key={id}
             role="tab"
@@ -76,15 +75,13 @@ export function TabPanel({ result, generated, isRunning }: TabPanelProps) {
           This prevents remount on tab switch, so React Flow and other
           stateful components stay alive and receive prop updates. */}
       <div className="tab-content" role="tabpanel">
-
         {/* Empty state — shown only when no result and not running */}
         {!result && !isRunning && (
           <div className="tab-empty">
             <div className="empty-icon">{t('empty.icon')}</div>
             <div className="empty-title">{t('empty.title')}</div>
             <div className="empty-sub">
-              {t('empty.hint')}{' '}
-              <kbd>{t('empty.run')}</kbd>
+              {t('empty.hint')} <kbd>{t('empty.run')}</kbd>
             </div>
           </div>
         )}
@@ -93,10 +90,7 @@ export function TabPanel({ result, generated, isRunning }: TabPanelProps) {
             visibility toggled with CSS display:none */}
         {result && (
           <>
-            <div
-              className="tab-scroll"
-              style={{ display: active === 'main' ? 'block' : 'none' }}
-            >
+            <div className="tab-scroll" style={{ display: active === 'main' ? 'block' : 'none' }}>
               <MainTable states={model.states} />
             </div>
 
@@ -107,29 +101,26 @@ export function TabPanel({ result, generated, isRunning }: TabPanelProps) {
               <ConnectTable transitions={model.transitions} />
             </div>
 
-            <div
-              className="tab-scroll"
-              style={{ display: active === 'memo' ? 'block' : 'none' }}
-            >
+            <div className="tab-scroll" style={{ display: active === 'memo' ? 'block' : 'none' }}>
               <MemoTable memo={model.memo} />
             </div>
 
-            <div
-              className="tab-scroll"
-              style={{ display: active === 'stack' ? 'block' : 'none' }}
-            >
+            <div className="tab-scroll" style={{ display: active === 'stack' ? 'block' : 'none' }}>
               <StackTracePanel analysis={exprs} />
             </div>
 
             {/* Graph tab — display:flex because ReactFlow needs flex container */}
-            <div
-              className="tab-graph"
-              style={{ display: active === 'graph' ? 'flex' : 'none' }}
-            >
+            <div className="tab-graph" style={{ display: active === 'graph' ? 'flex' : 'none' }}>
               <AutomatonDiagram model={model} />
             </div>
 
-            <div style={{ display: active === 'output' ? 'flex' : 'none', height: '100%', flexDirection: 'column' }}>
+            <div
+              style={{
+                display: active === 'output' ? 'flex' : 'none',
+                height: '100%',
+                flexDirection: 'column',
+              }}
+            >
               <CodeOutputPanel generated={generated} />
             </div>
           </>

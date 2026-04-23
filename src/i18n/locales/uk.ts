@@ -13,23 +13,24 @@ export default {
     lines_many: '{{count}} рядків',
     language: 'предикати',
     encoding: 'UTF-8',
-    placeholder: '{ true } [ read(x) ]\n{ x > 0 } [ print("positive") ]\n{ x < 0 } [ print("negative") ]',
+    placeholder:
+      '{ true } [ read(x) ]\n{ x > 0 } [ print("positive") ]\n{ x < 0 } [ print("negative") ]',
   },
 
   examples: {
-    sign:   'знак числа',
+    sign: 'знак числа',
     minmax: 'мін/макс',
-    grade:  'оцінка',
-    expr:   'A*(B+C/D)\u2212E',
+    grade: 'оцінка',
+    expr: 'A*(B+C/D)\u2212E',
   },
 
   tabs: {
-    main:    'MAIN',
+    main: 'MAIN',
     connect: 'CONNECT',
-    memo:    'MEMO',
-    stack:   'Stack Trace',
-    graph:   'Граф',
-    output:  'C++ Код',
+    memo: 'MEMO',
+    stack: 'Stack Trace',
+    graph: 'Граф',
+    output: 'C++ Код',
   },
 
   empty: {
@@ -98,7 +99,7 @@ export default {
   },
 
   diagram: {
-    empty: "Граф з\u2019явиться після побудови моделі",
+    empty: 'Граф з\u2019явиться після побудови моделі',
     initial: 'початковий',
     final: 'кінцевий',
     mark_hint: 'Mark = false для всіх станів · при повторному відвідуванні \u2192 повернення до S1',

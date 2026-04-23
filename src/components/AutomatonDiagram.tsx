@@ -30,7 +30,7 @@ function DiagramInner({ model }: AutomatonDiagramProps) {
   const { nodes: layoutNodes, edges: layoutEdges } = useMemo(
     () => buildGraphElements(model),
     // Stringify to detect deep changes in model
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
     [JSON.stringify(model)],
   )
 
@@ -62,12 +62,7 @@ function DiagramInner({ model }: AutomatonDiagramProps) {
       proOptions={{ hideAttribution: true }}
       colorMode="dark"
     >
-      <Background
-        variant={BackgroundVariant.Dots}
-        gap={20}
-        size={1}
-        color="#1e2030"
-      />
+      <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#1e2030" />
       <Controls
         showInteractive={false}
         style={{
@@ -77,10 +72,10 @@ function DiagramInner({ model }: AutomatonDiagramProps) {
         }}
       />
       <MiniMap
-        nodeColor={node => {
+        nodeColor={(node) => {
           const d = node.data as AutomatonNodeData
           if (d.stateType === 'initial') return '#6e84f7'
-          if (d.stateType === 'final')   return '#3dd68c'
+          if (d.stateType === 'final') return '#3dd68c'
           return '#f0c060'
         }}
         maskColor="rgba(11,12,18,0.7)"

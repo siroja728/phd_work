@@ -1,9 +1,24 @@
 import { escapeHtml } from './escapeHtml'
 
 const KEYWORDS = [
-  '#include', 'using', 'namespace', 'std', 'int', 'bool',
-  'string', 'float', 'double', 'return', 'while', 'switch',
-  'case', 'break', 'if', 'for', 'true', 'false',
+  '#include',
+  'using',
+  'namespace',
+  'std',
+  'int',
+  'bool',
+  'string',
+  'float',
+  'double',
+  'return',
+  'while',
+  'switch',
+  'case',
+  'break',
+  'if',
+  'for',
+  'true',
+  'false',
 ]
 
 const FUNCTIONS = ['cin', 'cout', 'endl', 'main']
@@ -31,7 +46,7 @@ export function highlightCpp(code: string): string {
   }
 
   // logical operators
-  h = h.replace(/(\&amp;\&amp;|\|\|)/g, '<span class="hl-op">$1</span>')
+  h = h.replace(/(&amp;&amp;|\|\|)/g, '<span class="hl-op">$1</span>')
 
   return h
 }

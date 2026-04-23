@@ -5,8 +5,8 @@ export type StateType = 'initial' | 'final' | 'normal'
 export interface AutomatonState {
   id: number
   type: StateType
-  label: string | null  // :name mark used for goto targeting
-  actions: string       // List_of_actions (raw string from predicate)
+  label: string | null // :name mark used for goto targeting
+  actions: string // List_of_actions (raw string from predicate)
   mark: boolean
 }
 
@@ -18,8 +18,8 @@ export interface AutomatonTransition {
 
 export interface MemoEntry {
   stateId: number
-  sem: string       // semaphore name
-  resource: string  // subroutine name
+  sem: string // semaphore name
+  resource: string // subroutine name
 }
 
 export interface AutomatonModel {
@@ -32,16 +32,16 @@ export interface AutomatonModel {
 
 export interface StackStep {
   step: number
-  pair: string       // поточна пара лексем
-  action: string     // що відбувається
-  pairStack: string  // стек пар лексем (рядковий вигляд)
-  code: string       // згенерований рядок проміжного коду або '—'
+  pair: string // поточна пара лексем
+  action: string // що відбувається
+  pairStack: string // стек пар лексем (рядковий вигляд)
+  code: string // згенерований рядок проміжного коду або '—'
 }
 
 export interface ExpressionAnalysis {
-  expr: string          // напр. "result = A * (B + C / D) - E"
+  expr: string // напр. "result = A * (B + C / D) - E"
   steps: StackStep[]
-  intermediateCode: string[]   // ["C / D = t1", "B + t1 = t2", ...]
+  intermediateCode: string[] // ["C / D = t1", "B + t1 = t2", ...]
   tempCount: number
 }
 

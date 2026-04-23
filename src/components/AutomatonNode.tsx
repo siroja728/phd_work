@@ -7,30 +7,21 @@ import type { AutomatonNodeData } from '../utils/graphLayout'
 function AutomatonNodeComponent({ data }: NodeProps<AutomatonNodeData>) {
   const { t } = useTranslation()
 
-  const isInit  = data.stateType === 'initial'
+  const isInit = data.stateType === 'initial'
   const isFinal = data.stateType === 'final'
 
   const typeLabel = isInit
     ? t('diagram.initial')
     : isFinal
-    ? t('diagram.final')
-    : t('state_type.normal')
+      ? t('diagram.final')
+      : t('state_type.normal')
 
-  const shortened = data.actions.length > 24
-    ? data.actions.slice(0, 24) + '…'
-    : data.actions || '—'
+  const shortened = data.actions.length > 24 ? data.actions.slice(0, 24) + '…' : data.actions || '—'
 
   return (
-    <div
-      className={`automaton-node automaton-node--${data.stateType}`}
-      title={data.actions || '—'}
-    >
+    <div className={`automaton-node automaton-node--${data.stateType}`} title={data.actions || '—'}>
       {/* Top handle — receives edges */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="automaton-handle"
-      />
+      <Handle type="target" position={Position.Top} className="automaton-handle" />
 
       {/* Node content */}
       <div className="automaton-node__header">
@@ -40,19 +31,13 @@ function AutomatonNodeComponent({ data }: NodeProps<AutomatonNodeData>) {
         </span>
       </div>
 
-      {data.actions && (
-        <div className="automaton-node__actions">{shortened}</div>
-      )}
+      {data.actions && <div className="automaton-node__actions">{shortened}</div>}
 
       {/* Double border ring for final states */}
       {isFinal && <div className="automaton-node__ring" />}
 
       {/* Bottom handle — emits edges */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="automaton-handle"
-      />
+      <Handle type="source" position={Position.Bottom} className="automaton-handle" />
     </div>
   )
 }

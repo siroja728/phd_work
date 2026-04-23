@@ -7,8 +7,8 @@ interface MainTableProps {
 
 const TYPE_CLASS: Record<StateType, string> = {
   initial: 'badge-initial',
-  final:   'badge-final',
-  normal:  'badge-normal',
+  final: 'badge-final',
+  normal: 'badge-normal',
 }
 
 export function MainTable({ states }: MainTableProps) {
@@ -30,7 +30,7 @@ export function MainTable({ states }: MainTableProps) {
         </tr>
       </thead>
       <tbody>
-        {states.map(s => (
+        {states.map((s) => (
           <tr key={s.id}>
             <td>{s.id}</td>
             <td>
@@ -40,9 +40,7 @@ export function MainTable({ states }: MainTableProps) {
             </td>
             <td>{s.label ? `:${s.label}` : '—'}</td>
             <td>{s.actions || '—'}</td>
-            <td className={s.mark ? 'mark-true' : 'mark-false'}>
-              {String(s.mark)}
-            </td>
+            <td className={s.mark ? 'mark-true' : 'mark-false'}>{String(s.mark)}</td>
           </tr>
         ))}
       </tbody>

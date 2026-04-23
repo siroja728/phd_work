@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EXAMPLES } from '../utils/examples'
 
@@ -12,11 +12,7 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
   const { t } = useTranslation()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const linesRef = useRef<HTMLDivElement>(null)
-  const [lineCount, setLineCount] = useState(1)
-
-  useEffect(() => {
-    setLineCount(value.split('\n').length)
-  }, [value])
+  const lineCount = value.split('\n').length
 
   function syncScroll() {
     if (linesRef.current && textareaRef.current) {
@@ -42,11 +38,12 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
     }
   }
 
-  const linesLabel = lineCount === 1
-    ? t('editor.lines_one', { count: lineCount })
-    : lineCount < 5
-    ? t('editor.lines_few', { count: lineCount })
-    : t('editor.lines_many', { count: lineCount })
+  const linesLabel =
+    lineCount === 1
+      ? t('editor.lines_one', { count: lineCount })
+      : lineCount < 5
+        ? t('editor.lines_few', { count: lineCount })
+        : t('editor.lines_many', { count: lineCount })
 
   return (
     <div className="editor-root">
@@ -59,12 +56,14 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
           <select
             className="example-select"
             defaultValue=""
-            onChange={e => {
+            onChange={(e) => {
               if (e.target.value) onChange(EXAMPLES[e.target.value])
               e.target.value = ''
             }}
           >
-            <option value="" disabled>{t('editor.examples')}</option>
+            <option value="" disabled>
+              {t('editor.examples')}
+            </option>
             <option value="sign">{t('examples.sign')}</option>
             <option value="minmax">{t('examples.minmax')}</option>
             <option value="grade">{t('examples.grade')}</option>
@@ -81,14 +80,16 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
       <div className="editor-body">
         <div className="line-numbers" ref={linesRef} aria-hidden="true">
           {Array.from({ length: lineCount }, (_, i) => (
-            <div key={i} className="line-number">{i + 1}</div>
+            <div key={i} className="line-number">
+              {i + 1}
+            </div>
           ))}
         </div>
         <textarea
           ref={textareaRef}
           className="editor-textarea"
           value={value}
-          onChange={e => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           onScroll={syncScroll}
           onKeyDown={handleKeyDown}
           spellCheck={false}

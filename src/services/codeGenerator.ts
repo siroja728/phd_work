@@ -17,17 +17,26 @@ function translateAction(act: string): string {
 // Arithmetic assignments are replaced with intermediate-code steps;
 // simple assignments and read/print pass through unchanged.
 function expandActions(actionsStr: string): string[] {
-  const acts = actionsStr.split(';').map(a => a.trim()).filter(Boolean)
-  const analyses = analyzeExpressions(actionsStr)   // threaded temps within state
+  const acts = actionsStr
+    .split(';')
+    .map((a) => a.trim())
+    .filter(Boolean)
+  const analyses = analyzeExpressions(actionsStr) // threaded temps within state
   const lines: string[] = []
   let analysisIdx = 0
 
   for (const act of acts) {
     const readMatch = act.match(/^read\((.+)\)$/)
-    if (readMatch) { lines.push(`cin >> ${readMatch[1]}`); continue }
+    if (readMatch) {
+      lines.push(`cin >> ${readMatch[1]}`)
+      continue
+    }
 
     const printMatch = act.match(/^print\((.+)\)$/)
-    if (printMatch) { lines.push(`cout << ${printMatch[1]} << endl`); continue }
+    if (printMatch) {
+      lines.push(`cout << ${printMatch[1]} << endl`)
+      continue
+    }
 
     const eqIdx = act.indexOf('=')
     if (eqIdx >= 0 && analysisIdx < analyses.length) {
@@ -45,7 +54,9 @@ function expandActions(actionsStr: string): string[] {
             const eqPos = intermediateCode[i].lastIndexOf('=')
             const expr = intermediateCode[i].slice(0, eqPos).trim()
             const temp = intermediateCode[i].slice(eqPos + 1).trim()
-            lines.push(i < intermediateCode.length - 1 ? `int ${temp} = ${expr}` : `${lhs} = ${expr}`)
+            lines.push(
+              i < intermediateCode.length - 1 ? `int ${temp} = ${expr}` : `${lhs} = ${expr}`,
+            )
           }
         }
         continue
@@ -72,8 +83,16 @@ function translateCondition(cond: string): string {
 // ── Variable extraction ───────────────────────────────────────────────────────
 
 const RESERVED = new Set([
-  'read', 'print', 'true', 'false', 'and', 'or', 'not',
-  'endl', 'cin', 'cout',
+  'read',
+  'print',
+  'true',
+  'false',
+  'and',
+  'or',
+  'not',
+  'endl',
+  'cin',
+  'cout',
 ])
 
 function extractVars(model: AutomatonModel): string[] {
@@ -103,15 +122,12 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
   if (n === 0) return { language: 'cpp', source: '// немає даних' }
 
   const vars = extractVars(model)
-  const varDecl = vars.length
-    ? vars.map(v => `    int ${v};`).join('\n')
-    : '    int x;'
+  const varDecl = vars.length ? vars.map((v) => `    int ${v};`).join('\n') : '    int x;'
 
-  const markReset =
-    states.map(s => `mark[${s.id}]`).join(' = ') + ' = false;'
+  const markReset = states.map((s) => `mark[${s.id}]`).join(' = ') + ' = false;'
 
   // Collect unique semaphore names
-  const semNames = [...new Set(model.memo.map(e => e.sem))]
+  const semNames = [...new Set(model.memo.map((e) => e.sem))]
 
   const lines: string[] = []
 
@@ -119,7 +135,11 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
   lines.push('#include <string>')
   lines.push('using namespace std;')
   lines.push('')
-  lines.push(`bool mark[${n + 1}] = {${Array(n + 1).fill('false').join(', ')}};`)
+  lines.push(
+    `bool mark[${n + 1}] = {${Array(n + 1)
+      .fill('false')
+      .join(', ')}};`,
+  )
   if (semNames.length > 0) {
     for (const sem of semNames) {
       lines.push(`bool ${sem} = false;`)
@@ -153,7 +173,7 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
     }
 
     // Semaphore: acquire → call resource → release
-    const memoEntry = model.memo.find(e => e.stateId === state.id)
+    const memoEntry = model.memo.find((e) => e.stateId === state.id)
     if (memoEntry) {
       lines.push(`                // семафор`)
       lines.push(`                while (${memoEntry.sem});`)
@@ -163,7 +183,7 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
     }
 
     // Transitions
-    const myTransitions = transitions.filter(t => t.from === state.id)
+    const myTransitions = transitions.filter((t) => t.from === state.id)
     if (myTransitions.length > 0) {
       lines.push(`                // переходи`)
       for (const tr of myTransitions) {

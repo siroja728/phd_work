@@ -2,7 +2,7 @@ import dagre from 'dagre'
 import type { Node, Edge } from '@xyflow/react'
 import type { AutomatonModel } from '../types'
 
-const NODE_WIDTH  = 180
+const NODE_WIDTH = 180
 const NODE_HEIGHT = 60
 
 export interface AutomatonNodeData extends Record<string, unknown> {
@@ -26,14 +26,14 @@ export function buildGraphElements(model: AutomatonModel): {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({
-    rankdir: 'TB',      // top → bottom
-    nodesep: 60,        // horizontal gap between nodes
-    ranksep: 80,        // vertical gap between ranks
+    rankdir: 'TB', // top → bottom
+    nodesep: 60, // horizontal gap between nodes
+    ranksep: 80, // vertical gap between ranks
     marginx: 20,
     marginy: 20,
   })
 
-  states.forEach(s => {
+  states.forEach((s) => {
     g.setNode(String(s.id), { width: NODE_WIDTH, height: NODE_HEIGHT })
   })
 
@@ -44,20 +44,20 @@ export function buildGraphElements(model: AutomatonModel): {
   dagre.layout(g)
 
   // ── Build React Flow nodes ─────────────────────────────────────────────
-  const nodes: Node<AutomatonNodeData>[] = states.map(s => {
+  const nodes: Node<AutomatonNodeData>[] = states.map((s) => {
     const pos = g.node(String(s.id))
     return {
       id: String(s.id),
-      type: 'automaton',           // custom node type
+      type: 'automaton', // custom node type
       position: {
-        x: pos.x - NODE_WIDTH  / 2,
+        x: pos.x - NODE_WIDTH / 2,
         y: pos.y - NODE_HEIGHT / 2,
       },
       data: {
-        stateId:   s.id,
+        stateId: s.id,
         stateType: s.type,
-        actions:   s.actions,
-        label:     `S${s.id}`,
+        actions: s.actions,
+        label: `S${s.id}`,
       },
     }
   })

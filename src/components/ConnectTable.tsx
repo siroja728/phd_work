@@ -25,7 +25,9 @@ export function ConnectTable({ transitions }: ConnectTableProps) {
         {transitions.map((tr, i) => (
           <tr key={i}>
             <td>{tr.from}</td>
-            <td><code className="condition-code">{tr.condition}</code></td>
+            <td>
+              <code className="condition-code">{tr.condition}</code>
+            </td>
             <td>{tr.to}</td>
           </tr>
         ))}

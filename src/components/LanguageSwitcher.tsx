@@ -16,14 +16,9 @@ export function LanguageSwitcher() {
   const { i18n } = useTranslation()
   const current = i18n.language as SupportedLanguage
 
-  function toggle() {
-    const next = current === 'uk' ? 'en' : 'uk'
-    i18n.changeLanguage(next)
-  }
-
   return (
     <div className="lang-switcher">
-      {SUPPORTED_LANGUAGES.map(lang => (
+      {SUPPORTED_LANGUAGES.map((lang) => (
         <button
           key={lang}
           className={`lang-btn ${lang === current ? 'lang-active' : ''}`}

@@ -18,12 +18,10 @@ export function StackTracePanel({ analysis }: StackTracePanelProps) {
         <div key={ei} className="expr-block">
           <div className="expr-header">
             <span>
-              {t('stack.expr_label')}:{' '}
-              <span className="expr-text">{ea.expr}</span>
+              {t('stack.expr_label')}: <span className="expr-text">{ea.expr}</span>
             </span>
             <span className="expr-meta">
-              {t('stack.temp_label')}:{' '}
-              <span className="expr-temp">{ea.tempCount}</span>
+              {t('stack.temp_label')}: <span className="expr-temp">{ea.tempCount}</span>
             </span>
           </div>
 
@@ -42,15 +40,13 @@ export function StackTracePanel({ analysis }: StackTracePanelProps) {
                     </tr>
                   </thead>
                   <tbody>
-                    {ea.steps.map(s => (
+                    {ea.steps.map((s) => (
                       <tr key={s.step}>
                         <td className="cell-muted">{s.step}</td>
                         <td className="cell-data">{s.pair}</td>
                         <td className="cell-action">{s.action}</td>
                         <td className="cell-stack">{s.pairStack}</td>
-                        <td className={s.code !== '—' ? 'cell-code' : 'cell-muted'}>
-                          {s.code}
-                        </td>
+                        <td className={s.code !== '—' ? 'cell-code' : 'cell-muted'}>{s.code}</td>
                       </tr>
                     ))}
                   </tbody>
