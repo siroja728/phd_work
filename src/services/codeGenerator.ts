@@ -1,4 +1,4 @@
-import type { AutomatonModel, GeneratedCode } from '../types'
+import type { AutomatonModel, GeneratedCode, IRNode } from '../types'
 import { analyzeExpressions } from './stackParser'
 
 // ── Action translation ────────────────────────────────────────────────────────
@@ -201,6 +201,105 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
   lines.push('')
   lines.push('        }')
   lines.push('    }')
+  lines.push('}')
+
+  return { language: 'cpp', source: lines.join('\n') }
+}
+
+// ── Structured code generator (uses IR) ──────────────────────────────────────
+
+function irToLines(ir: IRNode[], indent: string): string[] {
+  const out: string[] = []
+
+  for (const node of ir) {
+    switch (node.kind) {
+      case 'EX': {
+        if (node.actions) {
+          for (const line of expandActions(node.actions)) out.push(`${indent}${line};`)
+        }
+        break
+      }
+      case 'IF1': {
+        const cond = translateCondition(node.condition)
+        if (node.thenActions) {
+          out.push(`${indent}if (${cond}) {`)
+          for (const line of expandActions(node.thenActions)) out.push(`${indent}    ${line};`)
+          if (node.elseBranch.length > 0) {
+            out.push(`${indent}} else {`)
+            for (const branch of node.elseBranch) {
+              if (branch.actions)
+                for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
+            }
+          }
+          out.push(`${indent}}`)
+        } else if (node.elseBranch.length > 0) {
+          // Empty then-body — invert condition and emit just the else
+          out.push(`${indent}if (!(${cond})) {`)
+          for (const branch of node.elseBranch) {
+            if (branch.actions)
+              for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
+          }
+          out.push(`${indent}}`)
+        }
+        break
+      }
+      case 'IF3': {
+        node.branches.forEach((branch, i) => {
+          const kw = i === 0 ? 'if' : 'else if'
+          out.push(`${indent}${kw} (${translateCondition(branch.condition)}) {`)
+          if (branch.actions)
+            for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
+          out.push(`${indent}}`)
+        })
+        break
+      }
+      case 'DO2': {
+        out.push(`${indent}while (${translateCondition(node.condition)}) {`)
+        if (node.body)
+          for (const line of expandActions(node.body)) out.push(`${indent}    ${line};`)
+        out.push(`${indent}}`)
+        break
+      }
+      case 'DO3': {
+        out.push(`${indent}do {`)
+        if (node.body)
+          for (const line of expandActions(node.body)) out.push(`${indent}    ${line};`)
+        out.push(`${indent}} while (${translateCondition(node.condition)});`)
+        break
+      }
+      case 'RETURN': {
+        out.push(`${indent}return 0;`)
+        break
+      }
+    }
+  }
+
+  return out
+}
+
+export function generateStructuredCpp(model: AutomatonModel, ir: IRNode[]): GeneratedCode {
+  if (model.states.length === 0) return { language: 'cpp', source: '// no data' }
+
+  const vars = extractVars(model)
+  const varDecl = vars.length ? vars.map((v) => `    int ${v};`).join('\n') : '    int x;'
+  const semNames = [...new Set(model.memo.map((e) => e.sem))]
+
+  const lines: string[] = []
+  lines.push('#include <iostream>')
+  lines.push('using namespace std;')
+  lines.push('')
+
+  if (semNames.length > 0) {
+    for (const sem of semNames) lines.push(`bool ${sem} = false;`)
+    lines.push('')
+  }
+
+  lines.push('int main() {')
+  lines.push(varDecl)
+  lines.push('')
+
+  for (const line of irToLines(ir, '    ')) lines.push(line)
+
   lines.push('}')
 
   return { language: 'cpp', source: lines.join('\n') }

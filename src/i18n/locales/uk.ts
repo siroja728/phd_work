@@ -29,6 +29,7 @@ export default {
     connect: 'CONNECT',
     memo: 'MEMO',
     stack: 'Stack Trace',
+    ir: 'IR',
     graph: 'Граф',
     output: 'C++ Код',
   },

@@ -1,10 +1,10 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useTranslation } from 'react-i18next'
-import type { NodeProps } from '@xyflow/react'
+import type { Node, NodeProps } from '@xyflow/react'
 import type { AutomatonNodeData } from '../utils/graphLayout'
 
-function AutomatonNodeComponent({ data }: NodeProps<AutomatonNodeData>) {
+function AutomatonNodeComponent({ data }: NodeProps<Node<AutomatonNodeData>>) {
   const { t } = useTranslation()
 
   const isInit = data.stateType === 'initial'

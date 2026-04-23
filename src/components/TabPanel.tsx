@@ -1,33 +1,36 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ParseResult, GeneratedCode } from '../types'
+import type { ParseResult, GeneratedCode, IRNode } from '../types'
 import { MainTable } from './MainTable'
 import { ConnectTable } from './ConnectTable'
 import { MemoTable } from './MemoTable'
 import { StackTracePanel } from './StackTracePanel'
 import { AutomatonDiagram } from './AutomatonDiagram'
 import { CodeOutputPanel } from './CodeOutputPanel'
+import { IRPanel } from './IRPanel'
 
-type TabId = 'main' | 'connect' | 'memo' | 'stack' | 'graph' | 'output'
+type TabId = 'main' | 'connect' | 'memo' | 'stack' | 'ir' | 'graph' | 'output'
 
 const TAB_ICONS: Record<TabId, string> = {
   main: '⊞',
   connect: '⇄',
   memo: '⚙',
   stack: '≡',
+  ir: '⋮',
   graph: '◎',
   output: '❯',
 }
 
-const TABS: TabId[] = ['main', 'connect', 'memo', 'stack', 'graph', 'output']
+const TABS: TabId[] = ['main', 'connect', 'memo', 'stack', 'ir', 'graph', 'output']
 
 interface TabPanelProps {
   result: ParseResult | null
   generated: GeneratedCode | null
+  ir: IRNode[]
   isRunning: boolean
 }
 
-export function TabPanel({ result, generated, isRunning }: TabPanelProps) {
+export function TabPanel({ result, generated, ir, isRunning }: TabPanelProps) {
   const { t } = useTranslation()
   const [active, setActive] = useState<TabId>('output')
 
@@ -40,6 +43,7 @@ export function TabPanel({ result, generated, isRunning }: TabPanelProps) {
     if (id === 'connect') return String(model.transitions.length)
     if (id === 'memo') return model.memo.length > 0 ? String(model.memo.length) : null
     if (id === 'stack') return exprs.length > 0 ? String(exprs.length) : null
+    if (id === 'ir') return ir.length > 0 ? String(ir.length) : null
     return null
   }
 
@@ -107,6 +111,10 @@ export function TabPanel({ result, generated, isRunning }: TabPanelProps) {
 
             <div className="tab-scroll" style={{ display: active === 'stack' ? 'block' : 'none' }}>
               <StackTracePanel analysis={exprs} />
+            </div>
+
+            <div className="tab-scroll" style={{ display: active === 'ir' ? 'block' : 'none' }}>
+              <IRPanel ir={ir} />
             </div>
 
             {/* Graph tab — display:flex because ReactFlow needs flex container */}

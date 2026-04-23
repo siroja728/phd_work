@@ -5,15 +5,17 @@ import { Editor } from './components/Editor'
 import { TabPanel } from './components/TabPanel'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
 import { parsePredicates } from './services/predicateParser'
-import { generateCpp } from './services/codeGenerator'
+import { generateStructuredCpp } from './services/codeGenerator'
+import { detectPatterns } from './services/patternDetector'
 import { EXAMPLES } from './utils/examples'
-import type { ParseResult, GeneratedCode } from './types'
+import type { ParseResult, GeneratedCode, IRNode } from './types'
 
 export default function App() {
   const { t } = useTranslation()
   const [text, setText] = useState(EXAMPLES.sign)
   const [result, setResult] = useState<ParseResult | null>(null)
   const [generated, setGenerated] = useState<GeneratedCode | null>(null)
+  const [ir, setIr] = useState<IRNode[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [splitPct, setSplitPct] = useState(38)
 
@@ -24,8 +26,10 @@ export default function App() {
     setIsRunning(true)
     setTimeout(() => {
       const parsed = parsePredicates(text)
-      const code = generateCpp(parsed.model)
+      const irNodes = detectPatterns(parsed.model)
+      const code = generateStructuredCpp(parsed.model, irNodes)
       setResult(parsed)
+      setIr(irNodes)
       setGenerated(code)
       setIsRunning(false)
     }, 40)
@@ -91,7 +95,7 @@ export default function App() {
 
         <div className="ide-output-pane" style={{ width: `${100 - splitPct}%` }}>
           <ReactFlowProvider>
-            <TabPanel result={result} generated={generated} isRunning={isRunning} />
+            <TabPanel result={result} generated={generated} ir={ir} isRunning={isRunning} />
           </ReactFlowProvider>
         </div>
       </div>

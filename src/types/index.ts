@@ -57,6 +57,47 @@ export interface ParseResult {
   exprAnalysis: ExpressionAnalysis[]
 }
 
+// ── Intermediate representation (IR) types ───────────────────────────────────
+
+export interface IRNodeEX {
+  kind: 'EX'
+  stateId: number
+  actions: string
+}
+
+export interface IRNodeIF1 {
+  kind: 'IF1'
+  condition: string // "then" condition (the goto-jump condition)
+  thenActions: string // actions of the state that jumps (the "then" body)
+  elseBranch: Array<{ stateId: number; actions: string }>
+}
+
+export interface IRNodeIF3 {
+  kind: 'IF3'
+  branches: Array<{ condition: string; stateId: number; actions: string }>
+}
+
+export interface IRNodeDO2 {
+  kind: 'DO2'
+  condition: string
+  body: string
+  bodyStateId: number
+}
+
+export interface IRNodeDO3 {
+  kind: 'DO3'
+  body: string
+  bodyStateId: number
+  conditionStateId: number
+  condition: string
+}
+
+export interface IRNodeRETURN {
+  kind: 'RETURN'
+}
+
+export type IRNode = IRNodeEX | IRNodeIF1 | IRNodeIF3 | IRNodeDO2 | IRNodeDO3 | IRNodeRETURN
+
 // ── Code generation types ─────────────────────────────────────────────────────
 
 export type TargetLanguage = 'cpp'
