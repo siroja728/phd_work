@@ -21,10 +21,12 @@ export default {
 
   // Examples
   examples: {
-    sign: 'number sign',
-    minmax: 'min/max',
-    grade: 'grade',
-    expr: 'A*(B+C/D)−E',
+    sign:   'sign (IF3)',
+    ifelse: 'max (IF1)',
+    while:  'factorial (DO2)',
+    dowhile:'sum (DO3)',
+    expr:   'A*(B+C/D)−E',
+    memo:   'semaphore (MEMO)',
   },
 
   // Tab labels

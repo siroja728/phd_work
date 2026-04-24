@@ -38,7 +38,10 @@ export function buildGraphElements(model: AutomatonModel): {
   })
 
   transitions.forEach((tr, i) => {
-    g.setEdge(String(tr.from), String(tr.to), { id: `e${i}` })
+    // Skip self-loops and back-edges from dagre — they don't affect rank order
+    if (tr.from !== tr.to && tr.from < tr.to) {
+      g.setEdge(String(tr.from), String(tr.to), { id: `e${i}` })
+    }
   })
 
   dagre.layout(g)
@@ -70,25 +73,38 @@ export function buildGraphElements(model: AutomatonModel): {
     const key = `${tr.from}-${tr.to}`
     edgeCounts[key] = (edgeCounts[key] ?? 0) + 1
 
+    const isSelfLoop = tr.from === tr.to
+    const isBackEdge = !isSelfLoop && tr.from > tr.to
+
     return {
       id: `e${i}`,
       source: String(tr.from),
       target: String(tr.to),
-      type: 'smoothstep',
+      type: isSelfLoop ? 'selfloop' : 'smoothstep',
+      ...(isSelfLoop
+        ? { sourceHandle: 'right-out', targetHandle: 'right-in' }
+        : isBackEdge
+          ? { sourceHandle: 'left-out', targetHandle: 'left-in' }
+          : {}),
       animated: false,
       label: tr.condition,
-      labelStyle: {
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 11,
-        fill: '#f0c060',
-        fontWeight: 500,
-      },
-      labelBgStyle: {
-        fill: '#0f1117',
-        fillOpacity: 0.85,
-      },
-      labelBgPadding: [4, 6] as [number, number],
-      labelBgBorderRadius: 3,
+      // Self-loop labels are rendered inside LoopEdge via EdgeLabelRenderer
+      ...(isSelfLoop
+        ? {}
+        : {
+            labelStyle: {
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 11,
+              fill: '#f0c060',
+              fontWeight: 500,
+            },
+            labelBgStyle: {
+              fill: '#0f1117',
+              fillOpacity: 0.85,
+            },
+            labelBgPadding: [4, 6] as [number, number],
+            labelBgBorderRadius: 3,
+          }),
       style: {
         stroke: '#6e84f7',
         strokeWidth: 1.5,

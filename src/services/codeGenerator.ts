@@ -208,7 +208,16 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
 
 // ── Structured code generator (uses IR) ──────────────────────────────────────
 
-function irToLines(ir: IRNode[], indent: string): string[] {
+function emitSemaphore(sem: string, resource: string, indent: string): string[] {
+  return [
+    `${indent}while (${sem});`,
+    `${indent}${sem} = true;`,
+    `${indent}${resource}();`,
+    `${indent}${sem} = false;`,
+  ]
+}
+
+function irToLines(ir: IRNode[], indent: string, memo: AutomatonModel['memo']): string[] {
   const out: string[] = []
 
   for (const node of ir) {
@@ -217,6 +226,8 @@ function irToLines(ir: IRNode[], indent: string): string[] {
         if (node.actions) {
           for (const line of expandActions(node.actions)) out.push(`${indent}${line};`)
         }
+        const m = memo.find((e) => e.stateId === node.stateId)
+        if (m) out.push(...emitSemaphore(m.sem, m.resource, indent))
         break
       }
       case 'IF1': {
@@ -229,15 +240,18 @@ function irToLines(ir: IRNode[], indent: string): string[] {
             for (const branch of node.elseBranch) {
               if (branch.actions)
                 for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
+              const m = memo.find((e) => e.stateId === branch.stateId)
+              if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
             }
           }
           out.push(`${indent}}`)
         } else if (node.elseBranch.length > 0) {
-          // Empty then-body — invert condition and emit just the else
           out.push(`${indent}if (!(${cond})) {`)
           for (const branch of node.elseBranch) {
             if (branch.actions)
               for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
+            const m = memo.find((e) => e.stateId === branch.stateId)
+            if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
           }
           out.push(`${indent}}`)
         }
@@ -249,6 +263,8 @@ function irToLines(ir: IRNode[], indent: string): string[] {
           out.push(`${indent}${kw} (${translateCondition(branch.condition)}) {`)
           if (branch.actions)
             for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
+          const m = memo.find((e) => e.stateId === branch.stateId)
+          if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
           out.push(`${indent}}`)
         })
         break
@@ -257,6 +273,8 @@ function irToLines(ir: IRNode[], indent: string): string[] {
         out.push(`${indent}while (${translateCondition(node.condition)}) {`)
         if (node.body)
           for (const line of expandActions(node.body)) out.push(`${indent}    ${line};`)
+        const m = memo.find((e) => e.stateId === node.bodyStateId)
+        if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
         out.push(`${indent}}`)
         break
       }
@@ -264,6 +282,8 @@ function irToLines(ir: IRNode[], indent: string): string[] {
         out.push(`${indent}do {`)
         if (node.body)
           for (const line of expandActions(node.body)) out.push(`${indent}    ${line};`)
+        const m = memo.find((e) => e.stateId === node.bodyStateId)
+        if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
         out.push(`${indent}} while (${translateCondition(node.condition)});`)
         break
       }
@@ -298,7 +318,7 @@ export function generateStructuredCpp(model: AutomatonModel, ir: IRNode[]): Gene
   lines.push(varDecl)
   lines.push('')
 
-  for (const line of irToLines(ir, '    ')) lines.push(line)
+  for (const line of irToLines(ir, '    ', model.memo)) lines.push(line)
 
   lines.push('}')
 

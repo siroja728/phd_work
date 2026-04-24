@@ -15,9 +15,11 @@ import '@xyflow/react/dist/style.css'
 import type { AutomatonModel } from '../types'
 import { buildGraphElements } from '../utils/graphLayout'
 import { AutomatonNode } from './AutomatonNode'
+import { LoopEdge } from './LoopEdge'
 import type { AutomatonNodeData } from '../utils/graphLayout'
 
 const NODE_TYPES = { automaton: AutomatonNode }
+const EDGE_TYPES = { selfloop: LoopEdge }
 
 interface AutomatonDiagramProps {
   model: AutomatonModel
@@ -55,6 +57,7 @@ function DiagramInner({ model }: AutomatonDiagramProps) {
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       nodeTypes={NODE_TYPES}
+      edgeTypes={EDGE_TYPES}
       fitView
       fitViewOptions={{ padding: 0.25 }}
       minZoom={0.2}

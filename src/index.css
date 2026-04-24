@@ -429,3 +429,9 @@ body {
 .automaton-node:hover .automaton-handle {
   opacity: 1;
 }
+
+/* Side handles for back-edges and self-loops — always hidden */
+.automaton-handle--side {
+  opacity: 0 !important;
+  pointer-events: none;
+}

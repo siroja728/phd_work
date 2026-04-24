@@ -20,8 +20,40 @@ function AutomatonNodeComponent({ data }: NodeProps<Node<AutomatonNodeData>>) {
 
   return (
     <div className={`automaton-node automaton-node--${data.stateType}`} title={data.actions || '—'}>
-      {/* Top handle — receives edges */}
+      {/* Top handle — receives forward edges */}
       <Handle type="target" position={Position.Top} className="automaton-handle" />
+
+      {/* Left handles — for back-edges (loop return) */}
+      <Handle
+        type="source"
+        id="left-out"
+        position={Position.Left}
+        className="automaton-handle automaton-handle--side"
+        style={{ top: '50%' }}
+      />
+      <Handle
+        type="target"
+        id="left-in"
+        position={Position.Left}
+        className="automaton-handle automaton-handle--side"
+        style={{ top: '50%' }}
+      />
+
+      {/* Right handles — for self-loop edges */}
+      <Handle
+        type="source"
+        id="right-out"
+        position={Position.Right}
+        className="automaton-handle automaton-handle--side"
+        style={{ top: '35%' }}
+      />
+      <Handle
+        type="target"
+        id="right-in"
+        position={Position.Right}
+        className="automaton-handle automaton-handle--side"
+        style={{ top: '65%' }}
+      />
 
       {/* Node content */}
       <div className="automaton-node__header">
@@ -36,7 +68,7 @@ function AutomatonNodeComponent({ data }: NodeProps<Node<AutomatonNodeData>>) {
       {/* Double border ring for final states */}
       {isFinal && <div className="automaton-node__ring" />}
 
-      {/* Bottom handle — emits edges */}
+      {/* Bottom handle — emits forward edges */}
       <Handle type="source" position={Position.Bottom} className="automaton-handle" />
     </div>
   )

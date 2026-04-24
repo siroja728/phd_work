@@ -65,9 +65,11 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
               {t('editor.examples')}
             </option>
             <option value="sign">{t('examples.sign')}</option>
-            <option value="minmax">{t('examples.minmax')}</option>
-            <option value="grade">{t('examples.grade')}</option>
+            <option value="ifelse">{t('examples.ifelse')}</option>
+            <option value="while">{t('examples.while')}</option>
+            <option value="dowhile">{t('examples.dowhile')}</option>
             <option value="expr">{t('examples.expr')}</option>
+            <option value="memo">{t('examples.memo')}</option>
           </select>
           <button className="run-btn" onClick={onRun} title="Ctrl+Enter">
             <span className="run-icon">▶</span>
