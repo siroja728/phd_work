@@ -2,6 +2,7 @@ import type { ParseResult, AutomatonState, AutomatonTransition, MemoEntry } from
 import { analyzeExpressions } from './stackParser'
 
 interface RawPredicate {
+  thread: string | null // @name prefix
   label: string | null
   condition: string
   actions: string // goto-stripped, ready for model
@@ -11,10 +12,15 @@ interface RawPredicate {
 }
 
 function parseLine(line: string): RawPredicate {
+  // Optional @thread prefix
+  const threadMatch = line.match(/^@(\w+)\s+(.*)$/)
+  const thread = threadMatch ? threadMatch[1] : null
+  const rest0 = threadMatch ? threadMatch[2] : line
+
   // Optional :label prefix
-  const labelMatch = line.match(/^:(\w+)\s+(.*)$/)
+  const labelMatch = rest0.match(/^:(\w+)\s+(.*)$/)
   const label = labelMatch ? labelMatch[1] : null
-  const rest = labelMatch ? labelMatch[2] : line
+  const rest = labelMatch ? labelMatch[2] : rest0
 
   const condMatch = rest.match(/\{([^}]*)\}/)
   const actMatch = rest.match(/\[([^\]]*)\]/)
@@ -36,6 +42,7 @@ function parseLine(line: string): RawPredicate {
     .join('; ')
 
   return {
+    thread,
     label,
     condition: condMatch ? condMatch[1].trim() : 'true',
     actions,
@@ -53,7 +60,7 @@ export function parsePredicates(text: string): ParseResult {
 
   if (lines.length === 0) {
     return {
-      model: { states: [], transitions: [], memo: [] },
+      model: { states: [], transitions: [], memo: [], threads: [] },
       exprAnalysis: [],
     }
   }
@@ -61,10 +68,29 @@ export function parsePredicates(text: string): ParseResult {
   const parsed = lines.map(parseLine)
   const n = parsed.length
 
-  // Build label → stateId map (id = index + 1)
+  // Collect distinct thread names (preserving order of first appearance)
+  const threadNames: string[] = []
+  for (const p of parsed) {
+    if (p.thread && !threadNames.includes(p.thread)) threadNames.push(p.thread)
+  }
+
+  // Group indices by thread (null → '__main__' in single-thread mode)
+  const groupOf = (p: RawPredicate) => p.thread ?? '__main__'
+  const groupIndices = new Map<string, number[]>()
+  parsed.forEach((p, i) => {
+    const g = groupOf(p)
+    if (!groupIndices.has(g)) groupIndices.set(g, [])
+    groupIndices.get(g)!.push(i)
+  })
+
+  // Build label → stateId map — labels are scoped per thread to avoid clashes
+  // Key: "thread:label"
   const labelMap = new Map<string, number>()
   for (let i = 0; i < n; i++) {
-    if (parsed[i].label) labelMap.set(parsed[i].label!, i + 1)
+    if (parsed[i].label) {
+      const key = `${groupOf(parsed[i])}:${parsed[i].label}`
+      labelMap.set(key, i + 1)
+    }
   }
 
   const states: AutomatonState[] = []
@@ -73,29 +99,40 @@ export function parsePredicates(text: string): ParseResult {
   for (let i = 0; i < n; i++) {
     const p = parsed[i]
     const id = i + 1
+    const g = groupOf(p)
+    const gIdx = groupIndices.get(g)!
+    const posInGroup = gIdx.indexOf(i)
 
-    // Final = last state with no goto (no outgoing transitions)
-    const type = i === 0 ? 'initial' : i === n - 1 && p.gotos.length === 0 ? 'final' : 'normal'
+    const isFirst = posInGroup === 0
+    const isLast = posInGroup === gIdx.length - 1 && p.gotos.length === 0
+    const type = isFirst ? 'initial' : isLast ? 'final' : 'normal'
 
-    states.push({ id, type, label: p.label, actions: p.actions, mark: false })
+    states.push({
+      id,
+      type,
+      label: p.label,
+      actions: p.actions,
+      mark: false,
+      thread: p.thread ?? undefined,
+    })
 
-    // Sequential incoming transition from state id-1 → id
-    if (i > 0) {
-      transitions.push({ from: id - 1, condition: p.condition, to: id })
+    // Sequential transition: only within the same thread group
+    if (posInGroup > 0) {
+      const prevId = gIdx[posInGroup - 1] + 1
+      transitions.push({ from: prevId, condition: p.condition, to: id })
     }
 
-    // Goto transitions FROM this state, using this state's own condition.
-    // The sequential outgoing (to id+1) uses the NEXT predicate's condition,
-    // so goto and sequential are naturally complementary when designed correctly.
+    // Goto transitions — resolved within the same thread's label space
     for (const target of p.gotos) {
-      const toId = labelMap.get(target)
+      const key = `${g}:${target}`
+      const toId = labelMap.get(key)
       if (toId !== undefined) {
         transitions.push({ from: id, condition: p.condition, to: toId })
       }
     }
   }
 
-  // Build memo entries from predicates that have <sem: resource>
+  // Build memo entries
   const memo: MemoEntry[] = parsed
     .map((p, i) =>
       p.sem && p.resource ? { stateId: i + 1, sem: p.sem, resource: p.resource } : null,
@@ -105,7 +142,7 @@ export function parsePredicates(text: string): ParseResult {
   const exprAnalysis = states.flatMap((s) => (s.actions ? analyzeExpressions(s.actions) : []))
 
   return {
-    model: { states, transitions, memo },
+    model: { states, transitions, memo, threads: threadNames },
     exprAnalysis,
   }
 }

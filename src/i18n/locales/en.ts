@@ -21,12 +21,13 @@ export default {
 
   // Examples
   examples: {
-    sign:   'sign (IF3)',
-    ifelse: 'max (IF1)',
-    while:  'factorial (DO2)',
-    dowhile:'sum (DO3)',
-    expr:   'A*(B+C/D)−E',
-    memo:   'semaphore (MEMO)',
+    sign:     'sign (IF3)',
+    ifelse:   'max (IF1)',
+    while:    'factorial (DO2)',
+    dowhile:  'sum (DO3)',
+    expr:     'A*(B+C/D)−E',
+    memo:     'semaphore (MEMO)',
+    parallel: 'parallel threads',
   },
 
   // Tab labels
@@ -61,6 +62,7 @@ export default {
   table: {
     main: {
       id: 'Id_state',
+      thread: 'Thread',
       type: 'Type',
       label: 'Label',
       actions: 'List_of_actions',

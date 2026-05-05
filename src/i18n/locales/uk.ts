@@ -18,12 +18,13 @@ export default {
   },
 
   examples: {
-    sign:    'знак (IF3)',
-    ifelse:  'максимум (IF1)',
-    while:   'факторіал (DO2)',
-    dowhile: 'сума (DO3)',
-    expr:    'A*(B+C/D)−E',
-    memo:    'семафор (MEMO)',
+    sign:     'знак (IF3)',
+    ifelse:   'максимум (IF1)',
+    while:    'факторіал (DO2)',
+    dowhile:  'сума (DO3)',
+    expr:     'A*(B+C/D)−E',
+    memo:     'семафор (MEMO)',
+    parallel: 'паралельні потоки',
   },
 
   tabs: {
@@ -54,6 +55,7 @@ export default {
   table: {
     main: {
       id:      'Id_state',
+      thread:  'Потік',
       type:    'Type',
       label:   'Мітка',
       actions: 'List_of_actions',

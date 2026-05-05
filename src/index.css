@@ -179,6 +179,7 @@ body {
 .badge-initial { background: #1a2040; color: var(--blue);  border: 1px solid #2a3060; }
 .badge-final   { background: #0f2820; color: var(--green); border: 1px solid #1a4030; }
 .badge-normal  { background: #281e10; color: var(--amber); border: 1px solid #403010; }
+.badge-thread  { background: #1e1040; color: #c084fc;      border: 1px solid #3a1870; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
 .mark-true  { color: var(--green); font-weight: 700; }
 .mark-false { color: var(--text-muted); }
 .condition-code { font-family: var(--mono); font-size: 11px; color: var(--syn-cond); }

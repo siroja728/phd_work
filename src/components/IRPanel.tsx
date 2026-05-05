@@ -8,6 +8,8 @@ interface IRPanelProps {
 function renderNode(node: IRNode, depth = 0): string[] {
   const pad = '  '.repeat(depth)
   switch (node.kind) {
+    case 'THREAD':
+      return [`\n── @${node.name} ──`]
     case 'EX':
       return [`${pad}EX( ${node.actions || '—'} )`]
     case 'IF1': {

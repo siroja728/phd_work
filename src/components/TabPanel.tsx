@@ -36,7 +36,7 @@ export function TabPanel({ result, generated, ir, isRunning }: TabPanelProps) {
   const { t } = useTranslation()
   const [active, setActive] = useState<TabId>('output')
 
-  const model = result?.model ?? { states: [], transitions: [], memo: [] }
+  const model = result?.model ?? { states: [], transitions: [], memo: [], threads: [] }
   const exprs = result?.exprAnalysis ?? []
 
   function badge(id: TabId): string | null {

@@ -9,16 +9,14 @@ function buildOutMap(transitions: AutomatonTransition[]): Map<number, AutomatonT
   return map
 }
 
-export function detectPatterns(model: AutomatonModel): IRNode[] {
+// Run pattern detection on a single-thread (or single-automaton) sub-model.
+function detectSingle(model: AutomatonModel): IRNode[] {
   const states = [...model.states].sort((a, b) => a.id - b.id)
   const outMap = buildOutMap(model.transitions)
 
   const result: IRNode[] = []
   const visited = new Set<number>()
 
-  // Collects a sequential chain of states each entered via a non-trivial condition.
-  // Stops when a state has multiple outgoing, a self-loop, a back-edge, or a 'true' transition.
-  // Returns the branches collected and, if present, the state that follows the chain.
   function collectConditionalChain(
     startId: number,
     startCond: string,
@@ -28,7 +26,7 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
     let curCond = startCond
 
     while (curId !== undefined) {
-      const id = curId // capture for use in callbacks
+      const id = curId
       if (visited.has(id)) return { branches, afterId: id }
 
       const curState = states.find((s) => s.id === id)
@@ -39,7 +37,6 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
       const backEdges = curOut.filter((t) => t.to < id)
       const fwdOut: AutomatonTransition[] = curOut.filter((t) => t.to > id)
 
-      // Stop if this state is a branching or loop point — let visit() handle it
       if (selfLoop || backEdges.length > 0 || fwdOut.length >= 2) {
         return { branches, afterId: id }
       }
@@ -52,7 +49,6 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
 
       const nextTrans: AutomatonTransition = fwdOut[0]
       if (nextTrans.condition === 'true') {
-        // Trivial transition → the next state is after the conditional chain
         return { branches, afterId: nextTrans.to }
       }
 
@@ -105,7 +101,6 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
     }
 
     // ── DO3 (do-while): next state has a back-edge to current ─────────────────
-    // Must be checked before the conditional-chain check below.
     if (forwardOut.length === 1) {
       const nextId = forwardOut[0].to
       const nextOut = outMap.get(nextId) ?? []
@@ -126,7 +121,7 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
       }
     }
 
-    // ── EX (linear): emit actions, then check what follows ───────────────────
+    // ── EX (linear) ──────────────────────────────────────────────────────────
     result.push({ kind: 'EX', stateId: stateId, actions: state.actions })
 
     const next = forwardOut[0]
@@ -135,8 +130,6 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
       return
     }
 
-    // If the outgoing transition has a non-trivial condition, the states ahead
-    // form a conditional chain (sequential if/else-if structure without goto).
     if (next.condition !== 'true') {
       const chain = collectConditionalChain(next.to, next.condition)
       if (chain.branches.length >= 1) {
@@ -146,8 +139,6 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
         else result.push({ kind: 'RETURN' })
         return
       }
-      // chain is empty when next state is itself a branch/loop point —
-      // fall through so visit() handles it with the correct pattern.
     }
 
     visit(next.to)
@@ -155,5 +146,28 @@ export function detectPatterns(model: AutomatonModel): IRNode[] {
 
   if (states.length > 0) visit(states[0].id)
 
+  return result
+}
+
+// Build a sub-model containing only states belonging to one thread.
+function threadSubModel(model: AutomatonModel, thread: string): AutomatonModel {
+  const states = model.states.filter((s) => (s.thread ?? '__main__') === thread)
+  const ids = new Set(states.map((s) => s.id))
+  const transitions = model.transitions.filter((t) => ids.has(t.from) && ids.has(t.to))
+  const memo = model.memo.filter((m) => ids.has(m.stateId))
+  return { states, transitions, memo, threads: [] }
+}
+
+export function detectPatterns(model: AutomatonModel): IRNode[] {
+  if (model.threads.length <= 1) {
+    return detectSingle(model)
+  }
+
+  // Multi-thread: emit a THREAD marker before each group's IR nodes
+  const result: IRNode[] = []
+  for (const thread of model.threads) {
+    result.push({ kind: 'THREAD', name: thread })
+    result.push(...detectSingle(threadSubModel(model, thread)))
+  }
   return result
 }

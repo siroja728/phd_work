@@ -70,6 +70,7 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
             <option value="dowhile">{t('examples.dowhile')}</option>
             <option value="expr">{t('examples.expr')}</option>
             <option value="memo">{t('examples.memo')}</option>
+            <option value="parallel">{t('examples.parallel')}</option>
           </select>
           <button className="run-btn" onClick={onRun} title="Ctrl+Enter">
             <span className="run-icon">▶</span>

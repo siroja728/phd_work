@@ -8,6 +8,7 @@ export interface AutomatonState {
   label: string | null // :name mark used for goto targeting
   actions: string // List_of_actions (raw string from predicate)
   mark: boolean
+  thread?: string // @name prefix — undefined means single-thread mode
 }
 
 export interface AutomatonTransition {
@@ -26,6 +27,7 @@ export interface AutomatonModel {
   states: AutomatonState[]
   transitions: AutomatonTransition[]
   memo: MemoEntry[]
+  threads: string[] // distinct @thread names; empty = single-thread mode
 }
 
 // ── Stack algorithm types ─────────────────────────────────────────────────────
@@ -96,7 +98,19 @@ export interface IRNodeRETURN {
   kind: 'RETURN'
 }
 
-export type IRNode = IRNodeEX | IRNodeIF1 | IRNodeIF3 | IRNodeDO2 | IRNodeDO3 | IRNodeRETURN
+export interface IRNodeTHREAD {
+  kind: 'THREAD'
+  name: string // @threadName
+}
+
+export type IRNode =
+  | IRNodeEX
+  | IRNodeIF1
+  | IRNodeIF3
+  | IRNodeDO2
+  | IRNodeDO3
+  | IRNodeRETURN
+  | IRNodeTHREAD
 
 // ── Code generation types ─────────────────────────────────────────────────────
 

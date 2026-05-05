@@ -32,6 +32,18 @@ export const EXAMPLES: Record<string, string> = {
   memo: `{ true } [ read(n) ]
 :step { n > 0 } [ n = n-1; goto step ] <sem: sharedData>
 { n <= 0 } [ print(n) ]`,
+
+  // PARALLEL — 3 threads: sum (DO2) + factorial (DO2) + counter (DO3), shared output mutex
+  parallel: `@summer { true } [ read(n); sum = 0 ]
+@summer :add { n > 0 } [ sum = sum + n; n = n - 1; goto add ]
+@summer { n <= 0 } [ print(sum) ] <sem: out>
+@factor { true } [ read(m); prod = 1 ]
+@factor :mult { m > 1 } [ prod = prod * m; m = m - 1; goto mult ]
+@factor { m <= 1 } [ print(prod) ] <sem: out>
+@counter { true } [ read(k); cnt = 0 ]
+@counter :body { true } [ cnt = cnt + 1; k = k - 1 ]
+@counter { k > 0 } [ goto body ]
+@counter { k <= 0 } [ print(cnt) ] <sem: out>`,
 }
 
 export type ExampleKey = keyof typeof EXAMPLES

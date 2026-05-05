@@ -69,6 +69,26 @@ function EnContent() {
         </table>
       </Section>
 
+      <Section title="Parallel threads">
+        <p className="docs-note" style={{ marginBottom: 8 }}>
+          Prefix any line with <code>@threadName</code> to assign it to a named thread. All
+          threads run concurrently; the code generator emits one <code>std::thread</code> per
+          group. Semaphores become <code>std::mutex</code> + <code>lock_guard</code>.
+        </p>
+        <CodeBlock>{`@writer { true } [ read(n) ]
+@writer :write { n > 0 } [ n = n-1; goto write ] <sem: io>
+@writer { n <= 0 } [ print(n) ]
+@reader { true } [ read(m) ]
+@reader :read { m > 0 } [ m = m-1; goto read ] <sem: io>
+@reader { m <= 0 } [ print(m) ]`}</CodeBlock>
+        <table className="docs-table">
+          <tbody>
+            <Row code="@name" desc="Assigns this state to thread 'name'. States without @prefix form a single-thread automaton." />
+            <Row code="<sem: res>" desc="In multi-thread mode generates lock_guard<mutex> instead of a spin-lock." />
+          </tbody>
+        </table>
+      </Section>
+
       <Section title="Conditions">
         <table className="docs-table">
           <tbody>
@@ -165,6 +185,26 @@ function UkContent() {
             <Row code="{ умова }" desc="Охорона стану. Тіло виконується лише коли умова true." />
             <Row code="[ дії ]" desc="Список операцій, розділених крапкою з комою." />
             <Row code="<sem: res>" desc="Необов'язково. Додає семафорний захист навколо виклику функції res()." />
+          </tbody>
+        </table>
+      </Section>
+
+      <Section title="Паралельні потоки">
+        <p className="docs-note" style={{ marginBottom: 8 }}>
+          Додайте префікс <code>@імʼяПотоку</code> до будь-якого рядка, щоб призначити стан
+          потоку. Генератор створює по одному <code>std::thread</code> на групу. Семафори
+          стають <code>std::mutex</code> + <code>lock_guard</code>.
+        </p>
+        <CodeBlock>{`@writer { true } [ read(n) ]
+@writer :write { n > 0 } [ n = n-1; goto write ] <sem: io>
+@writer { n <= 0 } [ print(n) ]
+@reader { true } [ read(m) ]
+@reader :read { m > 0 } [ m = m-1; goto read ] <sem: io>
+@reader { m <= 0 } [ print(m) ]`}</CodeBlock>
+        <table className="docs-table">
+          <tbody>
+            <Row code="@імʼя" desc="Призначає стан потоку 'імʼя'. Стани без префікса формують однопотоковий автомат." />
+            <Row code="<sem: res>" desc="У багатопотоковому режимі генерує lock_guard<mutex> замість спін-блокування." />
           </tbody>
         </table>
       </Section>

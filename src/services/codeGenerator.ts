@@ -208,26 +208,55 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
 
 // ── Structured code generator (uses IR) ──────────────────────────────────────
 
-function emitSemaphore(sem: string, resource: string, indent: string): string[] {
+// Emit a state's body: actions wrapped in a lock_guard (parallel) or followed
+// by a spin-lock (sequential), or just plain action lines when no memo entry.
+function emitStateBody(
+  actions: string | undefined,
+  stateId: number,
+  indent: string,
+  memo: AutomatonModel['memo'],
+  parallel: boolean,
+): string[] {
+  const m = memo.find((e) => e.stateId === stateId)
+  const inner = m && parallel ? indent + '    ' : indent
+  const actionLines = actions ? expandActions(actions).map((l) => `${inner}${l};`) : []
+
+  if (!m) return actionLines
+
+  if (parallel) {
+    // Wrap actions inside lock_guard; mutex is named after the resource
+    return [
+      `${indent}{`,
+      `${indent}    lock_guard<mutex> _lock(${m.resource}_mtx);`,
+      ...actionLines,
+      `${indent}}`,
+    ]
+  }
+
+  // Sequential spin-lock: actions first, then acquire → call → release
   return [
-    `${indent}while (${sem});`,
-    `${indent}${sem} = true;`,
-    `${indent}${resource}();`,
-    `${indent}${sem} = false;`,
+    ...actionLines,
+    `${indent}while (${m.sem});`,
+    `${indent}${m.sem} = true;`,
+    `${indent}${m.resource}();`,
+    `${indent}${m.sem} = false;`,
   ]
 }
 
-function irToLines(ir: IRNode[], indent: string, memo: AutomatonModel['memo']): string[] {
+function irToLines(
+  ir: IRNode[],
+  indent: string,
+  memo: AutomatonModel['memo'],
+  parallel = false,
+): string[] {
   const out: string[] = []
 
   for (const node of ir) {
     switch (node.kind) {
+      case 'THREAD':
+        break // handled by caller
       case 'EX': {
-        if (node.actions) {
-          for (const line of expandActions(node.actions)) out.push(`${indent}${line};`)
-        }
-        const m = memo.find((e) => e.stateId === node.stateId)
-        if (m) out.push(...emitSemaphore(m.sem, m.resource, indent))
+        out.push(...emitStateBody(node.actions, node.stateId, indent, memo, parallel))
         break
       }
       case 'IF1': {
@@ -238,20 +267,18 @@ function irToLines(ir: IRNode[], indent: string, memo: AutomatonModel['memo']): 
           if (node.elseBranch.length > 0) {
             out.push(`${indent}} else {`)
             for (const branch of node.elseBranch) {
-              if (branch.actions)
-                for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
-              const m = memo.find((e) => e.stateId === branch.stateId)
-              if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
+              out.push(
+                ...emitStateBody(branch.actions, branch.stateId, `${indent}    `, memo, parallel),
+              )
             }
           }
           out.push(`${indent}}`)
         } else if (node.elseBranch.length > 0) {
           out.push(`${indent}if (!(${cond})) {`)
           for (const branch of node.elseBranch) {
-            if (branch.actions)
-              for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
-            const m = memo.find((e) => e.stateId === branch.stateId)
-            if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
+            out.push(
+              ...emitStateBody(branch.actions, branch.stateId, `${indent}    `, memo, parallel),
+            )
           }
           out.push(`${indent}}`)
         }
@@ -261,34 +288,28 @@ function irToLines(ir: IRNode[], indent: string, memo: AutomatonModel['memo']): 
         node.branches.forEach((branch, i) => {
           const kw = i === 0 ? 'if' : 'else if'
           out.push(`${indent}${kw} (${translateCondition(branch.condition)}) {`)
-          if (branch.actions)
-            for (const line of expandActions(branch.actions)) out.push(`${indent}    ${line};`)
-          const m = memo.find((e) => e.stateId === branch.stateId)
-          if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
+          out.push(
+            ...emitStateBody(branch.actions, branch.stateId, `${indent}    `, memo, parallel),
+          )
           out.push(`${indent}}`)
         })
         break
       }
       case 'DO2': {
         out.push(`${indent}while (${translateCondition(node.condition)}) {`)
-        if (node.body)
-          for (const line of expandActions(node.body)) out.push(`${indent}    ${line};`)
-        const m = memo.find((e) => e.stateId === node.bodyStateId)
-        if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
+        out.push(...emitStateBody(node.body, node.bodyStateId, `${indent}    `, memo, parallel))
         out.push(`${indent}}`)
         break
       }
       case 'DO3': {
         out.push(`${indent}do {`)
-        if (node.body)
-          for (const line of expandActions(node.body)) out.push(`${indent}    ${line};`)
-        const m = memo.find((e) => e.stateId === node.bodyStateId)
-        if (m) out.push(...emitSemaphore(m.sem, m.resource, `${indent}    `))
+        out.push(...emitStateBody(node.body, node.bodyStateId, `${indent}    `, memo, parallel))
         out.push(`${indent}} while (${translateCondition(node.condition)});`)
         break
       }
       case 'RETURN': {
-        out.push(`${indent}return 0;`)
+        // void thread functions use bare return; main() uses return 0;
+        out.push(parallel ? `${indent}return;` : `${indent}return 0;`)
         break
       }
     }
@@ -297,8 +318,115 @@ function irToLines(ir: IRNode[], indent: string, memo: AutomatonModel['memo']): 
   return out
 }
 
+// ── Parallel code generator ───────────────────────────────────────────────────
+
+// Lift read() actions from the first EX node of a thread into main() so that
+// all cin >> calls happen sequentially before any thread is spawned.
+// Returns the hoisted cin lines and the remaining IR nodes for the thread body.
+function extractSetupReads(nodes: IRNode[]): { setupLines: string[]; remaining: IRNode[] } {
+  if (nodes.length === 0 || nodes[0].kind !== 'EX') {
+    return { setupLines: [], remaining: nodes }
+  }
+
+  const first = nodes[0]
+  const acts = (first.actions ?? '')
+    .split(';')
+    .map((a) => a.trim())
+    .filter(Boolean)
+
+  const setupLines: string[] = []
+  const kept: string[] = []
+
+  for (const act of acts) {
+    const m = act.match(/^read\((.+)\)$/)
+    if (m) setupLines.push(`    cin >> ${m[1]};`)
+    else kept.push(act)
+  }
+
+  if (setupLines.length === 0) return { setupLines: [], remaining: nodes }
+
+  // Drop the first EX entirely if it had only reads; otherwise keep with remaining actions
+  const remaining: IRNode[] =
+    kept.length > 0 ? [{ ...first, actions: kept.join('; ') }, ...nodes.slice(1)] : nodes.slice(1)
+
+  return { setupLines, remaining }
+}
+
+function generateParallelCpp(model: AutomatonModel, ir: IRNode[]): GeneratedCode {
+  const vars = extractVars(model)
+  const resourceNames = [...new Set(model.memo.map((e) => e.resource))]
+
+  // Split flat IR into per-thread groups using THREAD markers
+  const rawGroups: Array<{ name: string; nodes: IRNode[] }> = []
+  let curNodes: IRNode[] = []
+  let curName = ''
+  for (const node of ir) {
+    if (node.kind === 'THREAD') {
+      if (curName) rawGroups.push({ name: curName, nodes: curNodes })
+      curName = node.name
+      curNodes = []
+    } else {
+      curNodes.push(node)
+    }
+  }
+  if (curName) rawGroups.push({ name: curName, nodes: curNodes })
+
+  // Hoist initial reads out of each thread into main()
+  const groups = rawGroups.map(({ name, nodes }) => {
+    const { setupLines, remaining } = extractSetupReads(nodes)
+    return { name, nodes: remaining, setupLines }
+  })
+
+  const lines: string[] = []
+  lines.push('#include <iostream>')
+  lines.push('#include <thread>')
+  lines.push('#include <mutex>')
+  lines.push('using namespace std;')
+  lines.push('')
+
+  if (vars.length) {
+    lines.push('// shared variables')
+    for (const v of vars) lines.push(`int ${v} = 0;`)
+    lines.push('')
+  }
+
+  if (resourceNames.length > 0) {
+    for (const res of resourceNames) lines.push(`mutex ${res}_mtx;`)
+    lines.push('')
+  }
+
+  for (const { name, nodes } of groups) {
+    lines.push(`void ${name}() {`)
+    for (const line of irToLines(nodes, '    ', model.memo, true)) lines.push(line)
+    lines.push('}')
+    lines.push('')
+  }
+
+  lines.push('int main() {')
+
+  // Sequential reads before any thread starts
+  const allSetup = groups.flatMap((g) => g.setupLines)
+  if (allSetup.length > 0) {
+    lines.push('    // read inputs before spawning threads')
+    for (const line of allSetup) lines.push(line)
+    lines.push('')
+  }
+
+  for (const { name } of groups) lines.push(`    thread t_${name}(${name});`)
+  if (groups.length > 0) lines.push('')
+  for (const { name } of groups) lines.push(`    t_${name}.join();`)
+  lines.push('    return 0;')
+  lines.push('}')
+
+  return { language: 'cpp', source: lines.join('\n') }
+}
+
+// ── Sequential structured code generator ─────────────────────────────────────
+
 export function generateStructuredCpp(model: AutomatonModel, ir: IRNode[]): GeneratedCode {
   if (model.states.length === 0) return { language: 'cpp', source: '// no data' }
+
+  if (model.threads.length > 1) return generateParallelCpp(model, ir)
 
   const vars = extractVars(model)
   const varDecl = vars.length ? vars.map((v) => `    int ${v};`).join('\n') : '    int x;'
