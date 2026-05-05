@@ -34,6 +34,7 @@ export default {
     ir:      'IR',
     graph:   'Граф',
     output:  'C++ Код',
+    docs:    'Довідка',
   },
 
   empty: {

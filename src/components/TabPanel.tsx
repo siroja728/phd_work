@@ -8,8 +8,9 @@ import { StackTracePanel } from './StackTracePanel'
 import { AutomatonDiagram } from './AutomatonDiagram'
 import { CodeOutputPanel } from './CodeOutputPanel'
 import { IRPanel } from './IRPanel'
+import { DocsPanel } from './DocsPanel'
 
-type TabId = 'main' | 'connect' | 'memo' | 'stack' | 'ir' | 'graph' | 'output'
+type TabId = 'main' | 'connect' | 'memo' | 'stack' | 'ir' | 'graph' | 'output' | 'docs'
 
 const TAB_ICONS: Record<TabId, string> = {
   main: '⊞',
@@ -19,9 +20,10 @@ const TAB_ICONS: Record<TabId, string> = {
   ir: '⋮',
   graph: '◎',
   output: '❯',
+  docs: '?',
 }
 
-const TABS: TabId[] = ['main', 'connect', 'memo', 'stack', 'ir', 'graph', 'output']
+const TABS: TabId[] = ['main', 'connect', 'memo', 'stack', 'ir', 'graph', 'output', 'docs']
 
 interface TabPanelProps {
   result: ParseResult | null
@@ -79,8 +81,13 @@ export function TabPanel({ result, generated, ir, isRunning }: TabPanelProps) {
           This prevents remount on tab switch, so React Flow and other
           stateful components stay alive and receive prop updates. */}
       <div className="tab-content" role="tabpanel">
-        {/* Empty state — shown only when no result and not running */}
-        {!result && !isRunning && (
+        {/* Docs tab — always available, no model required */}
+        <div className="tab-scroll" style={{ display: active === 'docs' ? 'block' : 'none' }}>
+          <DocsPanel />
+        </div>
+
+        {/* Empty state — shown only when no result, not running, and not on docs tab */}
+        {!result && !isRunning && active !== 'docs' && (
           <div className="tab-empty">
             <div className="empty-icon">{t('empty.icon')}</div>
             <div className="empty-title">{t('empty.title')}</div>

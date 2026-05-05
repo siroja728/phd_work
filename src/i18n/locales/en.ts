@@ -38,6 +38,7 @@ export default {
     ir: 'IR',
     graph: 'Graph',
     output: 'C++ Output',
+    docs: 'Docs',
   },
 
   // Empty state
