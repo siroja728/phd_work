@@ -1,6 +1,8 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EXAMPLES } from '../utils/examples'
+import { formatPredicates } from '../utils/formatPredicates'
+import { validatePredicates, type Diagnostic } from '../utils/validatePredicates'
 
 interface EditorProps {
   value: string
@@ -14,17 +16,49 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
   const linesRef = useRef<HTMLDivElement>(null)
   const lineCount = value.split('\n').length
 
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
+  useEffect(() => {
+    const id = setTimeout(() => setDiagnostics(validatePredicates(value)), 400)
+    return () => clearTimeout(id)
+  }, [value])
+
+  const errorByLine = new Map<number, Diagnostic[]>()
+  for (const d of diagnostics) {
+    if (!errorByLine.has(d.line)) errorByLine.set(d.line, [])
+    errorByLine.get(d.line)!.push(d)
+  }
+
   function syncScroll() {
     if (linesRef.current && textareaRef.current) {
       linesRef.current.scrollTop = textareaRef.current.scrollTop
     }
   }
 
+  function handleFormat() {
+    onChange(formatPredicates(value))
+  }
+
+  function handleRun() {
+    // Validate synchronously so keyboard shortcut can't bypass debounced state
+    const errs = validatePredicates(value)
+    if (errs.length > 0) {
+      setDiagnostics(errs)
+      return
+    }
+    onRun()
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault()
-      onRun()
+      handleRun()
     }
+
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'F' || e.key === 'f')) {
+      e.preventDefault()
+      handleFormat()
+    }
+
     if (e.key === 'Tab') {
       e.preventDefault()
       const el = textareaRef.current!
@@ -72,8 +106,16 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
             <option value="memo">{t('examples.memo')}</option>
             <option value="parallel">{t('examples.parallel')}</option>
           </select>
-          <button className="run-btn" onClick={onRun} title="Ctrl+Enter">
-            <span className="run-icon">▶</span>
+          <button className="fmt-btn" onClick={handleFormat} title="Ctrl+F">
+            <span>{t('editor.format')}</span>
+            <kbd>⌃F</kbd>
+          </button>
+          <button
+            className={`run-btn${diagnostics.length > 0 ? ' run-btn--blocked' : ''}`}
+            onClick={handleRun}
+            title={diagnostics.length > 0 ? 'Fix errors before running' : 'Ctrl+Enter'}
+          >
+            <span className="run-icon">{diagnostics.length > 0 ? '✕' : '▶'}</span>
             <span>{t('editor.run')}</span>
             <kbd>⌃↵</kbd>
           </button>
@@ -82,11 +124,18 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
 
       <div className="editor-body">
         <div className="line-numbers" ref={linesRef} aria-hidden="true">
-          {Array.from({ length: lineCount }, (_, i) => (
-            <div key={i} className="line-number">
-              {i + 1}
-            </div>
-          ))}
+          {Array.from({ length: lineCount }, (_, i) => {
+            const errs = errorByLine.get(i + 1)
+            return (
+              <div
+                key={i}
+                className={`line-number${errs ? ' line-number--error' : ''}`}
+                title={errs ? errs.map((e) => e.message).join('\n') : undefined}
+              >
+                {errs ? '!' : i + 1}
+              </div>
+            )
+          })}
         </div>
         <textarea
           ref={textareaRef}
@@ -102,6 +151,18 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
           placeholder={t('editor.placeholder')}
         />
       </div>
+
+      {diagnostics.length > 0 && (
+        <div className="editor-diagnostics">
+          {diagnostics.map((d, i) => (
+            <div key={i} className="diag-row">
+              <span className="diag-loc">L{d.line}</span>
+              <span className="diag-msg">{d.message}</span>
+              <span className="diag-hint">{d.hint}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="editor-statusbar">
         <span>{linesLabel}</span>

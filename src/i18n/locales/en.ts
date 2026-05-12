@@ -10,6 +10,7 @@ export default {
   editor: {
     examples: 'examples…',
     run: 'Run',
+    format: 'Format',
     lines_one: '{{count}} line',
     lines_few: '{{count}} lines',
     lines_many: '{{count}} lines',

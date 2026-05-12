@@ -10,6 +10,10 @@ function translateAction(act: string): string {
   const printMatch = act.match(/^print\((.+)\)$/)
   if (printMatch) return `cout << ${printMatch[1]} << endl`
 
+  // Normalize simple assignment spacing: x=5 or x =5 → x = 5
+  const assignMatch = act.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/)
+  if (assignMatch) return `${assignMatch[1]} = ${assignMatch[2]}`
+
   return act
 }
 
@@ -320,36 +324,20 @@ function irToLines(
 
 // ── Parallel code generator ───────────────────────────────────────────────────
 
-// Lift read() actions from the first EX node of a thread into main() so that
-// all cin >> calls happen sequentially before any thread is spawned.
-// Returns the hoisted cin lines and the remaining IR nodes for the thread body.
-function extractSetupReads(nodes: IRNode[]): { setupLines: string[]; remaining: IRNode[] } {
+// Hoist ALL actions from the first EX node of a thread into main() so the
+// entire initial state (reads, variable init, constants) runs sequentially
+// before any thread is spawned.
+function extractSetupActions(nodes: IRNode[]): { setupLines: string[]; remaining: IRNode[] } {
   if (nodes.length === 0 || nodes[0].kind !== 'EX') {
     return { setupLines: [], remaining: nodes }
   }
 
   const first = nodes[0]
-  const acts = (first.actions ?? '')
-    .split(';')
-    .map((a) => a.trim())
-    .filter(Boolean)
+  if (!first.actions) return { setupLines: [], remaining: nodes.slice(1) }
 
-  const setupLines: string[] = []
-  const kept: string[] = []
+  const setupLines = expandActions(first.actions).map((line) => `    ${line};`)
 
-  for (const act of acts) {
-    const m = act.match(/^read\((.+)\)$/)
-    if (m) setupLines.push(`    cin >> ${m[1]};`)
-    else kept.push(act)
-  }
-
-  if (setupLines.length === 0) return { setupLines: [], remaining: nodes }
-
-  // Drop the first EX entirely if it had only reads; otherwise keep with remaining actions
-  const remaining: IRNode[] =
-    kept.length > 0 ? [{ ...first, actions: kept.join('; ') }, ...nodes.slice(1)] : nodes.slice(1)
-
-  return { setupLines, remaining }
+  return { setupLines, remaining: nodes.slice(1) }
 }
 
 function generateParallelCpp(model: AutomatonModel, ir: IRNode[]): GeneratedCode {
@@ -373,7 +361,7 @@ function generateParallelCpp(model: AutomatonModel, ir: IRNode[]): GeneratedCode
 
   // Hoist initial reads out of each thread into main()
   const groups = rawGroups.map(({ name, nodes }) => {
-    const { setupLines, remaining } = extractSetupReads(nodes)
+    const { setupLines, remaining } = extractSetupActions(nodes)
     return { name, nodes: remaining, setupLines }
   })
 

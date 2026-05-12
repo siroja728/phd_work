@@ -8,6 +8,7 @@ export default {
   editor: {
     examples: 'приклади…',
     run: 'Виконати',
+    format: 'Форматувати',
     lines_one: '{{count}} рядок',
     lines_few: '{{count}} рядки',
     lines_many: '{{count}} рядків',

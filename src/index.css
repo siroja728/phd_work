@@ -93,6 +93,18 @@ body {
   padding: 3px 8px; border-radius: 4px; cursor: pointer; outline: none;
 }
 .example-select:hover { border-color: var(--blue); color: var(--text-primary); }
+.fmt-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  padding: 4px 10px; background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--pane-border); border-radius: 4px; cursor: pointer; transition: all 0.15s;
+}
+.fmt-btn:hover { background: var(--chrome-hover); color: var(--text-primary); transform: translateY(-1px); }
+.fmt-btn:active { transform: translateY(0); }
+.fmt-btn kbd {
+  font-family: var(--mono); font-size: 9px;
+  background: var(--chrome-hover); padding: 1px 4px; border-radius: 3px;
+}
 .run-btn {
   display: flex; align-items: center; gap: 5px;
   font-family: var(--mono); font-size: 11px; font-weight: 600;
@@ -101,6 +113,8 @@ body {
 }
 .run-btn:hover { background: #8098ff; transform: translateY(-1px); }
 .run-btn:active { transform: translateY(0); }
+.run-btn--blocked { background: #4a1010 !important; cursor: not-allowed; }
+.run-btn--blocked:hover { background: #5a1414 !important; transform: none; }
 .run-icon { font-size: 9px; }
 .run-btn kbd {
   font-family: var(--mono); font-size: 9px;
@@ -124,6 +138,35 @@ body {
 }
 .editor-textarea::placeholder { color: var(--text-muted); font-style: italic; }
 .editor-textarea::selection { background: var(--editor-select); }
+.line-number--error {
+  color: var(--red) !important;
+  font-weight: 700;
+  border-left: 2px solid var(--red);
+  padding-left: 4px;
+  cursor: default;
+}
+
+.editor-diagnostics {
+  max-height: 110px; overflow-y: auto; flex-shrink: 0;
+  background: #1a0808; border-top: 1px solid #4a1010;
+  font-family: var(--mono); font-size: 11px;
+}
+.diag-row {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 3px 10px; border-bottom: 1px solid #2a0c0c;
+}
+.diag-row:last-child { border-bottom: none; }
+.diag-loc {
+  color: var(--red); font-weight: 700; flex-shrink: 0; min-width: 28px;
+}
+.diag-msg {
+  color: #f0a0a0; flex-shrink: 0;
+}
+.diag-hint {
+  color: var(--text-secondary); font-style: italic;
+}
+.diag-hint::before { content: '→ '; opacity: 0.5; }
+
 .editor-statusbar {
   display: flex; align-items: center; height: 22px; padding: 0 12px;
   background: var(--status-bg); border-top: 1px solid var(--status-border);
