@@ -22,4 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-node_modules
+
+# c++sandbox — track only .cpp source files
+src/utils/c++sandbox/*
+!src/utils/c++sandbox/*.cpp
