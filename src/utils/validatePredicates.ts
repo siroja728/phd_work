@@ -125,13 +125,21 @@ function validateLine(raw: string, lineNum: number, definedLabels: Set<string>):
         continue
       }
 
-      // assignment: identifier = ...
-      if (/^[A-Za-z_]\w*\s*=/.test(act)) continue
+      // assignment: identifier = ... or array element: arr[i] = ...
+      if (/^[A-Za-z_]\w*(\[[^\]]*\])?\s*=/.test(act)) continue
+
+      // type declaration: name: type  |  name[size]: type  |  name: type = value
+      if (
+        /^[A-Za-z_]\w*(\[[^\]]*\])?\s*:\s*(int|integer|float|double|bool|char|symb|string)(\s*=.*)?$/i.test(
+          act,
+        )
+      )
+        continue
 
       diags.push({
         line: lineNum,
         message: `Unknown action: '${act}'`,
-        hint: 'Valid actions: read(x), print(x), x = expr, goto label',
+        hint: 'Valid actions: read(x), print(x), x = expr, goto label, x: type',
       })
     }
   }

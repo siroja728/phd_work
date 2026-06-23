@@ -84,37 +84,64 @@ function translateCondition(cond: string): string {
     .replace(/(?<![=!<>])=(?!=)/g, '==')
 }
 
-// ── Variable extraction ───────────────────────────────────────────────────────
+// ── Variable declarations ─────────────────────────────────────────────────────
 
 const RESERVED = new Set([
-  'read',
-  'print',
-  'true',
-  'false',
-  'and',
-  'or',
-  'not',
-  'endl',
-  'cin',
-  'cout',
+  'read', 'print', 'true', 'false', 'and', 'or', 'not',
+  'endl', 'cin', 'cout',
+  'int', 'integer', 'float', 'double', 'bool', 'char', 'symb', 'string',
 ])
 
-function extractVars(model: AutomatonModel): string[] {
-  const vars = new Set<string>()
+// Collect identifiers from actions that are not in model.vars (fallback to int)
+function extractUndeclaredVars(model: AutomatonModel): string[] {
+  const declared = new Set(model.vars.map((v) => v.name))
+  const found = new Set<string>()
   const re = /\b([A-Za-z_][A-Za-z0-9_]*)\b/g
 
   for (const state of model.states) {
-    let m: RegExpExecArray | null
     re.lastIndex = 0
+    let m: RegExpExecArray | null
     while ((m = re.exec(state.actions)) !== null) {
       const v = m[1]
-      if (!RESERVED.has(v.toLowerCase())) {
-        vars.add(v)
-      }
+      if (!RESERVED.has(v.toLowerCase()) && !declared.has(v)) found.add(v)
+    }
+  }
+  return [...found]
+}
+
+// Build C++ variable declaration lines.
+// indent: leading spaces  |  forGlobal: emit default init values for numeric types
+function buildVarLines(model: AutomatonModel, indent: string, forGlobal = false): string[] {
+  const lines: string[] = []
+
+  for (const v of model.vars) {
+    if (v.arraySize) {
+      // Arrays never get a scalar initializer in the declaration line
+      lines.push(`${indent}${v.cppType} ${v.name}[${v.arraySize}];`)
+    } else {
+      const init = v.initializer ?? (forGlobal ? defaultInit(v.cppType) : null)
+      lines.push(`${indent}${v.cppType} ${v.name}${init ? ` = ${init}` : ''};`)
     }
   }
 
-  return [...vars]
+  // Fallback: undeclared identifiers found in actions → int
+  for (const name of extractUndeclaredVars(model)) {
+    lines.push(`${indent}int ${name}${forGlobal ? ' = 0' : ''};`)
+  }
+
+  if (lines.length === 0) lines.push(`${indent}int x;`)
+  return lines
+}
+
+function defaultInit(cppType: string): string | null {
+  switch (cppType) {
+    case 'int':    return '0'
+    case 'float':  return '0.0f'
+    case 'double': return '0.0'
+    case 'bool':   return 'false'
+    case 'char':   return "'\\0'"
+    default:       return null
+  }
 }
 
 // ── Code generator ────────────────────────────────────────────────────────────
@@ -125,9 +152,7 @@ export function generateCpp(model: AutomatonModel): GeneratedCode {
 
   if (n === 0) return { language: 'cpp', source: '// немає даних' }
 
-  const vars = extractVars(model)
-  const varDecl = vars.length ? vars.map((v) => `    int ${v};`).join('\n') : '    int x;'
-
+  const varDecl = buildVarLines(model, '    ').join('\n')
   const markReset = states.map((s) => `mark[${s.id}]`).join(' = ') + ' = false;'
 
   // Collect unique semaphore names
@@ -341,7 +366,6 @@ function extractSetupActions(nodes: IRNode[]): { setupLines: string[]; remaining
 }
 
 function generateParallelCpp(model: AutomatonModel, ir: IRNode[]): GeneratedCode {
-  const vars = extractVars(model)
   const resourceNames = [...new Set(model.memo.map((e) => e.resource))]
 
   // Split flat IR into per-thread groups using THREAD markers
@@ -367,14 +391,16 @@ function generateParallelCpp(model: AutomatonModel, ir: IRNode[]): GeneratedCode
 
   const lines: string[] = []
   lines.push('#include <iostream>')
+  lines.push('#include <string>')
   lines.push('#include <thread>')
   lines.push('#include <mutex>')
   lines.push('using namespace std;')
   lines.push('')
 
-  if (vars.length) {
+  const globalVarLines = buildVarLines(model, '', true).filter((l) => l !== 'int x;')
+  if (globalVarLines.length > 0) {
     lines.push('// shared variables')
-    for (const v of vars) lines.push(`int ${v} = 0;`)
+    for (const l of globalVarLines) lines.push(l)
     lines.push('')
   }
 
@@ -416,8 +442,7 @@ export function generateStructuredCpp(model: AutomatonModel, ir: IRNode[]): Gene
 
   if (model.threads.length > 1) return generateParallelCpp(model, ir)
 
-  const vars = extractVars(model)
-  const varDecl = vars.length ? vars.map((v) => `    int ${v};`).join('\n') : '    int x;'
+  const varDecl = buildVarLines(model, '    ').join('\n')
   const semNames = [...new Set(model.memo.map((e) => e.sem))]
 
   const lines: string[] = []

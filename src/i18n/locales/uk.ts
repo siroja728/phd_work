@@ -24,6 +24,7 @@ export default {
     while:    'факторіал (DO2)',
     dowhile:  'сума (DO3)',
     expr:     'A*(B+C/D)−E',
+    floats:   'середнє (float)',
     memo:     'семафор (MEMO)',
     parallel: 'паралельні потоки',
   },

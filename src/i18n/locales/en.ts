@@ -27,6 +27,7 @@ export default {
     while:    'factorial (DO2)',
     dowhile:  'sum (DO3)',
     expr:     'A*(B+C/D)−E',
+    floats:   'float average',
     memo:     'semaphore (MEMO)',
     parallel: 'parallel threads',
   },

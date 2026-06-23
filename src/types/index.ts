@@ -23,11 +23,19 @@ export interface MemoEntry {
   resource: string // subroutine name
 }
 
+export interface VarDeclaration {
+  name: string
+  cppType: string      // 'int' | 'float' | 'double' | 'bool' | 'char' | 'string'
+  arraySize?: string   // defined → array, e.g. '10' or 'N'
+  initializer?: string // optional init value, e.g. '0', 'N - 1'
+}
+
 export interface AutomatonModel {
   states: AutomatonState[]
   transitions: AutomatonTransition[]
   memo: MemoEntry[]
-  threads: string[] // distinct @thread names; empty = single-thread mode
+  vars: VarDeclaration[] // explicitly typed variable declarations
+  threads: string[]      // distinct @thread names; empty = single-thread mode
 }
 
 // ── Stack algorithm types ─────────────────────────────────────────────────────

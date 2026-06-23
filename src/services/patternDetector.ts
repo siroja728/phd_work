@@ -155,7 +155,7 @@ function threadSubModel(model: AutomatonModel, thread: string): AutomatonModel {
   const ids = new Set(states.map((s) => s.id))
   const transitions = model.transitions.filter((t) => ids.has(t.from) && ids.has(t.to))
   const memo = model.memo.filter((m) => ids.has(m.stateId))
-  return { states, transitions, memo, threads: [] }
+  return { states, transitions, memo, vars: model.vars, threads: [] }
 }
 
 export function detectPatterns(model: AutomatonModel): IRNode[] {

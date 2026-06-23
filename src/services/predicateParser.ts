@@ -1,14 +1,48 @@
-import type { ParseResult, AutomatonState, AutomatonTransition, MemoEntry } from '../types'
+import type { ParseResult, AutomatonState, AutomatonTransition, MemoEntry, VarDeclaration } from '../types'
 import { analyzeExpressions } from './stackParser'
 
+// ── Type system ───────────────────────────────────────────────────────────────
+
+const CPP_TYPES: Record<string, string> = {
+  int: 'int',
+  integer: 'int',
+  float: 'float',
+  double: 'double',
+  bool: 'bool',
+  char: 'char',
+  symb: 'char',
+  string: 'string',
+}
+
+// Matches: name: type  |  name: type = value  |  name[size]: type  |  name[size]: type = value
+const DECL_RE =
+  /^([A-Za-z_][A-Za-z0-9_]*)(\[([^\]]+)\])?\s*:\s*(int|integer|float|double|bool|char|symb|string)(\s*=\s*(.+))?$/i
+
+function parseDeclaration(action: string): { decl: VarDeclaration; assign?: string } | null {
+  const m = DECL_RE.exec(action.trim())
+  if (!m) return null
+  const [, name, , arraySize, rawType, , initVal] = m
+  const cppType = CPP_TYPES[rawType.toLowerCase()]
+  const decl: VarDeclaration = { name, cppType }
+  if (arraySize) decl.arraySize = arraySize.trim()
+  const init = initVal?.trim()
+  if (init) decl.initializer = init
+  // If an initializer was provided, keep it as a runtime assignment too
+  const assign = init ? `${name} = ${init}` : undefined
+  return { decl, assign }
+}
+
+// ── Raw predicate ─────────────────────────────────────────────────────────────
+
 interface RawPredicate {
-  thread: string | null // @name prefix
+  thread: string | null
   label: string | null
   condition: string
-  actions: string // goto-stripped, ready for model
-  gotos: string[] // label names extracted from goto statements
-  sem: string | null // semaphore name from <sem: resource>
-  resource: string | null // resource subroutine from <sem: resource>
+  actions: string        // executable actions only (declarations stripped)
+  gotos: string[]
+  declaredVars: VarDeclaration[]
+  sem: string | null
+  resource: string | null
 }
 
 function parseLine(line: string): RawPredicate {
@@ -27,26 +61,35 @@ function parseLine(line: string): RawPredicate {
   const memoMatch = rest.match(/<([^:>]+):([^>]+)>/)
   const raw = actMatch ? actMatch[1] : ''
 
-  // Extract all goto targets
+  // Process each action individually: separate gotos, declarations, and executable actions
   const gotos: string[] = []
-  const gotoRe = /\bgoto\s+(\w+)/g
-  let m: RegExpExecArray | null
-  while ((m = gotoRe.exec(raw)) !== null) gotos.push(m[1])
+  const declaredVars: VarDeclaration[] = []
+  const execActions: string[] = []
 
-  // Strip goto statements from actions
-  const actions = raw
-    .replace(/\bgoto\s+\w+/g, '')
-    .split(';')
-    .map((a) => a.trim())
-    .filter(Boolean)
-    .join('; ')
+  for (const act of raw.split(';').map((a) => a.trim()).filter(Boolean)) {
+    const gotoM = act.match(/^goto\s+(\w+)$/)
+    if (gotoM) {
+      gotos.push(gotoM[1])
+      continue
+    }
+
+    const declResult = parseDeclaration(act)
+    if (declResult) {
+      declaredVars.push(declResult.decl)
+      if (declResult.assign) execActions.push(declResult.assign)
+      continue
+    }
+
+    execActions.push(act)
+  }
 
   return {
     thread,
     label,
     condition: condMatch ? condMatch[1].trim() : 'true',
-    actions,
+    actions: execActions.join('; '),
     gotos,
+    declaredVars,
     sem: memoMatch ? memoMatch[1].trim() : null,
     resource: memoMatch ? memoMatch[2].trim() : null,
   }
@@ -60,7 +103,7 @@ export function parsePredicates(text: string): ParseResult {
 
   if (lines.length === 0) {
     return {
-      model: { states: [], transitions: [], memo: [], threads: [] },
+      model: { states: [], transitions: [], memo: [], vars: [], threads: [] },
       exprAnalysis: [],
     }
   }
@@ -139,10 +182,19 @@ export function parsePredicates(text: string): ParseResult {
     )
     .filter((e): e is MemoEntry => e !== null)
 
+  // Collect typed variable declarations (deduplicated; first occurrence wins)
+  const varMap = new Map<string, VarDeclaration>()
+  for (const p of parsed) {
+    for (const v of p.declaredVars) {
+      if (!varMap.has(v.name)) varMap.set(v.name, v)
+    }
+  }
+  const vars = [...varMap.values()]
+
   const exprAnalysis = states.flatMap((s) => (s.actions ? analyzeExpressions(s.actions) : []))
 
   return {
-    model: { states, transitions, memo, threads: threadNames },
+    model: { states, transitions, memo, vars, threads: threadNames },
     exprAnalysis,
   }
 }
