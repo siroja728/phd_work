@@ -125,6 +125,13 @@ export default {
     ts_title: 'TypeScript fallback',
   },
 
+  // Theme switcher
+  theme: {
+    label: 'Theme',
+    dark: 'Dark theme',
+    light: 'Light theme',
+  },
+
   // Automaton diagram
   diagram: {
     empty: 'Graph will appear after building the model',

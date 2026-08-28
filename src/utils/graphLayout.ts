@@ -16,7 +16,22 @@ export interface AutomatonEdgeData extends Record<string, unknown> {
   condition: string
 }
 
-export function buildGraphElements(model: AutomatonModel): {
+export interface EdgeColors {
+  stroke: string
+  labelText: string
+  labelBg: string
+}
+
+const DEFAULT_EDGE_COLORS: EdgeColors = {
+  stroke: '#7c90ff',
+  labelText: '#f0c060',
+  labelBg: '#0f1117',
+}
+
+export function buildGraphElements(
+  model: AutomatonModel,
+  edgeColors: EdgeColors = DEFAULT_EDGE_COLORS,
+): {
   nodes: Node<AutomatonNodeData>[]
   edges: Edge<AutomatonEdgeData>[]
 } {
@@ -94,25 +109,25 @@ export function buildGraphElements(model: AutomatonModel): {
         : {
             labelStyle: {
               fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              fill: '#f0c060',
+              fontSize: 12,
+              fill: edgeColors.labelText,
               fontWeight: 500,
             },
             labelBgStyle: {
-              fill: '#0f1117',
-              fillOpacity: 0.85,
+              fill: edgeColors.labelBg,
+              fillOpacity: 0.9,
             },
             labelBgPadding: [4, 6] as [number, number],
             labelBgBorderRadius: 3,
           }),
       style: {
-        stroke: '#6e84f7',
+        stroke: edgeColors.stroke,
         strokeWidth: 1.5,
-        strokeOpacity: 0.7,
+        strokeOpacity: 0.8,
       },
       markerEnd: {
         type: 'arrowclosed' as const,
-        color: '#6e84f7',
+        color: edgeColors.stroke,
         width: 16,
         height: 16,
       },

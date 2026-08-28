@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Editor } from './components/Editor'
 import { TabPanel } from './components/TabPanel'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { ThemeSwitcher } from './components/ThemeSwitcher'
 import { initCore, runCore, type Engine } from './core-wasm/core'
 import { EXAMPLES } from './utils/examples'
 import type { ParseResult, GeneratedCode, IRNode } from './types'
@@ -88,6 +89,8 @@ export default function App() {
         </div>
         <div className="titlebar-right">
           <span className="titlebar-link">{t('app.subtitle')}</span>
+          <div className="titlebar-divider" />
+          <ThemeSwitcher />
           <div className="titlebar-divider" />
           <LanguageSwitcher />
         </div>

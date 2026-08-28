@@ -17,6 +17,7 @@ import { buildGraphElements } from '../utils/graphLayout'
 import { AutomatonNode } from './AutomatonNode'
 import { LoopEdge } from './LoopEdge'
 import type { AutomatonNodeData } from '../utils/graphLayout'
+import { useTheme } from '../useTheme'
 
 const NODE_TYPES = { automaton: AutomatonNode }
 const EDGE_TYPES = { selfloop: LoopEdge }
@@ -28,12 +29,18 @@ interface AutomatonDiagramProps {
 // Inner component — has access to ReactFlow context for fitView
 function DiagramInner({ model }: AutomatonDiagramProps) {
   const { fitView } = useReactFlow()
+  const { theme, colors } = useTheme()
 
   const { nodes: layoutNodes, edges: layoutEdges } = useMemo(
-    () => buildGraphElements(model),
-    // Stringify to detect deep changes in model
+    () =>
+      buildGraphElements(model, {
+        stroke: colors.blue,
+        labelText: colors.amber,
+        labelBg: colors.paneBg,
+      }),
+    // Stringify to detect deep changes in model; rebuild on theme change too
     // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
-    [JSON.stringify(model)],
+    [JSON.stringify(model), colors.blue, colors.amber, colors.paneBg],
   )
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes)
@@ -63,28 +70,28 @@ function DiagramInner({ model }: AutomatonDiagramProps) {
       minZoom={0.2}
       maxZoom={2.5}
       proOptions={{ hideAttribution: true }}
-      colorMode="dark"
+      colorMode={theme}
     >
-      <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#1e2030" />
+      <Background variant={BackgroundVariant.Dots} gap={20} size={1} color={colors.paneBorder} />
       <Controls
         showInteractive={false}
         style={{
-          background: '#13141a',
-          border: '1px solid #22242e',
+          background: colors.chromeBg,
+          border: `1px solid ${colors.chromeBorder}`,
           borderRadius: 6,
         }}
       />
       <MiniMap
         nodeColor={(node) => {
           const d = node.data as AutomatonNodeData
-          if (d.stateType === 'initial') return '#6e84f7'
-          if (d.stateType === 'final') return '#3dd68c'
-          return '#f0c060'
+          if (d.stateType === 'initial') return colors.blue
+          if (d.stateType === 'final') return colors.green
+          return colors.amber
         }}
-        maskColor="rgba(11,12,18,0.7)"
+        maskColor={colors.mask}
         style={{
-          background: '#13141a',
-          border: '1px solid #22242e',
+          background: colors.chromeBg,
+          border: `1px solid ${colors.chromeBorder}`,
           borderRadius: 6,
         }}
       />

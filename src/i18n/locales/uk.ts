@@ -113,6 +113,12 @@ export default {
     ts_title:   'Резервний рушій TypeScript',
   },
 
+  theme: {
+    label: 'Тема',
+    dark:  'Темна тема',
+    light: 'Світла тема',
+  },
+
   diagram: {
     empty:     'Граф з’явиться після побудови моделі',
     initial:   'початковий',

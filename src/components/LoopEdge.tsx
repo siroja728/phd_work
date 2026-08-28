@@ -29,9 +29,9 @@ function LoopEdgeComponent({
         id={id}
         d={d}
         fill="none"
-        stroke="#6e84f7"
+        style={{ stroke: 'var(--blue)' }}
         strokeWidth={1.5}
-        strokeOpacity={0.7}
+        strokeOpacity={0.8}
         markerEnd={markerEnd}
       />
       {label && (
@@ -41,10 +41,10 @@ function LoopEdgeComponent({
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${midX}px,${midY}px)`,
               fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              color: '#f0c060',
+              fontSize: 12,
+              color: 'var(--amber)',
               fontWeight: 500,
-              background: 'rgba(15,17,23,0.88)',
+              background: 'color-mix(in srgb, var(--pane-bg) 90%, transparent)',
               padding: '2px 6px',
               borderRadius: 3,
               pointerEvents: 'none',
