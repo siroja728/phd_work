@@ -63,6 +63,9 @@ body {
 .app-logo   { color: var(--blue); font-size: 14px; }
 .app-name   { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.04em; }
 .app-version { font-family: var(--mono); font-size: 10px; color: var(--text-muted); background: var(--chrome-border); padding: 1px 5px; border-radius: 3px; }
+.engine-badge { font-family: var(--mono); font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px; letter-spacing: 0.04em; }
+.engine-badge--wasm { background: #10261a; color: #4ade80; border: 1px solid #1c4a30; }
+.engine-badge--ts { background: #2a1e10; color: #fbbf24; border: 1px solid #4a3410; }
 .titlebar-file { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); background: var(--chrome-hover); padding: 2px 10px; border-radius: 4px; border: 1px solid var(--chrome-border); }
 .titlebar-link { font-size: 11px; color: var(--text-muted); }
 

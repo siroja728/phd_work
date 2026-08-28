@@ -4,9 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Editor } from './components/Editor'
 import { TabPanel } from './components/TabPanel'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
-import { parsePredicates } from './services/predicateParser'
-import { generateStructuredCpp } from './services/codeGenerator'
-import { detectPatterns } from './services/patternDetector'
+import { initCore, runCore, type Engine } from './core-wasm/core'
 import { EXAMPLES } from './utils/examples'
 import type { ParseResult, GeneratedCode, IRNode } from './types'
 
@@ -18,19 +16,25 @@ export default function App() {
   const [ir, setIr] = useState<IRNode[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [splitPct, setSplitPct] = useState(38)
+  const [engine, setEngine] = useState<Engine>('ts')
 
   const containerRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
 
+  // Load the C++/WASM core once at startup (falls back to TS if it fails).
+  useEffect(() => {
+    initCore().then(setEngine)
+  }, [])
+
   function handleRun() {
     setIsRunning(true)
     setTimeout(() => {
-      const parsed = parsePredicates(text)
-      const irNodes = detectPatterns(parsed.model)
-      const code = generateStructuredCpp(parsed.model, irNodes)
+      const { model, exprAnalysis, ir: irNodes, code } = runCore(text)
+      const parsed: ParseResult = { model, exprAnalysis }
+      const generatedCode: GeneratedCode = { language: 'cpp', source: code }
       setResult(parsed)
       setIr(irNodes)
-      setGenerated(code)
+      setGenerated(generatedCode)
       setIsRunning(false)
     }, 40)
   }
@@ -72,6 +76,12 @@ export default function App() {
           <span className="app-logo">◈</span>
           <span className="app-name">{t('app.name')}</span>
           <span className="app-version">v0.3</span>
+          <span
+            className={`engine-badge engine-badge--${engine}`}
+            title={engine === 'wasm' ? t('engine.wasm_title') : t('engine.ts_title')}
+          >
+            {engine === 'wasm' ? 'C++ / WASM' : 'TS'}
+          </span>
         </div>
         <div className="titlebar-center">
           <span className="titlebar-file">{t('app.file')}</span>
