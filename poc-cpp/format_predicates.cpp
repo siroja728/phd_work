@@ -14,19 +14,20 @@
 //
 // Build: clang++ -std=c++17 -O2 format_predicates.cpp -o format_predicates
 // ─────────────────────────────────────────────────────────────────────────────
+#include <iostream>
+#include <regex>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <regex>
-#include <iostream>
-#include <sstream>
 
 namespace {
-using std::string;
 using std::regex;
+using std::string;
 
 string trim(const string& s) {
   size_t a = s.find_first_not_of(" \t\r\n\f\v");
-  if (a == string::npos) return "";
+  if (a == string::npos)
+    return "";
   size_t b = s.find_last_not_of(" \t\r\n\f\v");
   return s.substr(a, b - a + 1);
 }
@@ -44,8 +45,8 @@ string normalizeCondition(const string& raw) {
   s = std::regex_replace(s, regex(R"(([^<>!=])\s*<\s*(?![=]))"), "$1 < ");
   // logical keywords — case-insensitive
   s = std::regex_replace(s, regex(R"(\s+and\s+)", std::regex::icase), " and ");
-  s = std::regex_replace(s, regex(R"(\s+or\s+)",  std::regex::icase), " or ");
-  s = std::regex_replace(s, regex(R"(\bnot\s+)",  std::regex::icase), "not ");
+  s = std::regex_replace(s, regex(R"(\s+or\s+)", std::regex::icase), " or ");
+  s = std::regex_replace(s, regex(R"(\bnot\s+)", std::regex::icase), "not ");
   // temporal operators — 'until' → 'U' (first only), leading 'next' → 'X'
   s = std::regex_replace(s, regex(R"(\s+(?:U|[Uu]ntil)\s+)"), " U ",
                          std::regex_constants::format_first_only);
@@ -58,7 +59,8 @@ string normalizeCondition(const string& raw) {
 // ── normalizeSingleAction ─────────────────────────────────────────────────────
 string normalizeSingleAction(const string& act) {
   string t = trim(act);
-  if (t.empty()) return "";
+  if (t.empty())
+    return "";
 
   if (std::regex_search(t, regex(R"(^read\s*\()")))
     return std::regex_replace(t, regex(R"(^read\s*\()"), "read(");
@@ -85,18 +87,25 @@ string normalizeActions(const string& raw) {
   string part;
   while (std::getline(ss, part, ';')) {
     string a = normalizeSingleAction(part);
-    if (!a.empty()) acts.push_back(a);
+    if (!a.empty())
+      acts.push_back(a);
   }
-  if (acts.empty()) return "";
+  if (acts.empty())
+    return "";
   string out;
-  for (size_t i = 0; i < acts.size(); i++) { if (i) out += "; "; out += acts[i]; }
+  for (size_t i = 0; i < acts.size(); i++) {
+    if (i)
+      out += "; ";
+    out += acts[i];
+  }
   return out + ";";
 }
 
 // ── formatLine ────────────────────────────────────────────────────────────────
 string formatLine(const string& line) {
   string trimmed = trim(line);
-  if (trimmed.empty()) return "";
+  if (trimmed.empty())
+    return "";
 
   string rest = trimmed;
   std::vector<string> parts;
@@ -124,7 +133,11 @@ string formatLine(const string& line) {
     parts.push_back("<" + trim(m[1].str()) + ": " + trim(m[2].str()) + ">");
 
   string out;
-  for (size_t i = 0; i < parts.size(); i++) { if (i) out += " "; out += parts[i]; }
+  for (size_t i = 0; i < parts.size(); i++) {
+    if (i)
+      out += " ";
+    out += parts[i];
+  }
   return out;
 }
 
@@ -133,25 +146,32 @@ string formatPredicates(const string& text) {
   std::vector<string> lines;
   std::stringstream ss(text);
   string line;
-  while (std::getline(ss, line, '\n')) lines.push_back(formatLine(line));
+  while (std::getline(ss, line, '\n'))
+    lines.push_back(formatLine(line));
 
   std::vector<string> out;
   bool prevBlank = false;
   for (const string& l : lines) {
     bool blank = l.empty();
-    if (blank && prevBlank) continue;
+    if (blank && prevBlank)
+      continue;
     out.push_back(l);
     prevBlank = blank;
   }
   string joined;
-  for (size_t i = 0; i < out.size(); i++) { if (i) joined += "\n"; joined += out[i]; }
+  for (size_t i = 0; i < out.size(); i++) {
+    if (i)
+      joined += "\n";
+    joined += out[i];
+  }
   return trim(joined);
 }
 
 } // namespace
 
 int main() {
-  std::stringstream buf; buf << std::cin.rdbuf();
+  std::stringstream buf;
+  buf << std::cin.rdbuf();
   std::cout << formatPredicates(buf.str());
   return 0;
 }

@@ -4,7 +4,8 @@
 #include <iostream>
 #include <sstream>
 int main() {
-  std::stringstream buf; buf << std::cin.rdbuf();
+  std::stringstream buf;
+  buf << std::cin.rdbuf();
   std::cout << core::emitModel(core::parsePredicates(buf.str()));
   return 0;
 }

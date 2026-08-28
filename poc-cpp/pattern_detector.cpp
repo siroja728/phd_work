@@ -4,7 +4,8 @@
 #include <iostream>
 #include <sstream>
 int main() {
-  std::stringstream buf; buf << std::cin.rdbuf();
+  std::stringstream buf;
+  buf << std::cin.rdbuf();
   core::Model model = core::parsePredicates(buf.str());
   std::cout << core::emitIR(core::detectPatterns(model));
   return 0;

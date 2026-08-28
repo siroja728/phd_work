@@ -1,0 +1,22 @@
+{
+  "version": "0.2",
+  "language": "en,uk",
+  "ignorePaths": [
+    "poc-cpp/**/*.cpp",
+    "poc-cpp/**/*.hpp",
+    "**/core_wasm.mjs",
+    "public/core_wasm.wasm",
+    "node_modules/**",
+    "dist/**"
+  ],
+  "words": [
+    "phdwork",
+    "predicat",
+    "predicates",
+    "Kripke",
+    "emscripten",
+    "wasm",
+    "cppType",
+    "symb"
+  ]
+}

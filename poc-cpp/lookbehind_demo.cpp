@@ -12,17 +12,17 @@
 //
 // Build: clang++ -std=c++17 -O2 lookbehind_demo.cpp -o lookbehind_demo
 // ─────────────────────────────────────────────────────────────────────────────
-#include <string>
-#include <regex>
 #include <iostream>
+#include <regex>
 #include <sstream>
+#include <string>
 
 using std::string;
 
 // (1) Prove std::regex rejects lookbehind at construction time.
 void demoStdRegexFails() {
   try {
-    std::regex bad(R"((?<![=!<>])=(?!=))");   // lookbehind — unsupported
+    std::regex bad(R"((?<![=!<>])=(?!=))"); // lookbehind — unsupported
     (void)bad;
     std::cerr << "  [unexpected] std::regex accepted lookbehind\n";
   } catch (const std::regex_error& e) {
@@ -41,7 +41,10 @@ string singleEqToDoubleEq(const string& s) {
       char next = i + 1 < s.size() ? s[i + 1] : '\0';
       bool prevBlocks = (prev == '=' || prev == '!' || prev == '<' || prev == '>');
       bool nextBlocks = (next == '=');
-      if (!prevBlocks && !nextBlocks) { out += "=="; continue; }
+      if (!prevBlocks && !nextBlocks) {
+        out += "==";
+        continue;
+      }
     }
     out += c;
   }
@@ -51,10 +54,11 @@ string singleEqToDoubleEq(const string& s) {
 // Full port of translateCondition: the and/or/not parts DO port to std::regex
 // (word-boundary \b is supported); only the '=' part needs the hand scan.
 string translateCondition(const string& cond) {
-  if (cond == "true") return "true";
+  if (cond == "true")
+    return "true";
   string s = cond;
   s = std::regex_replace(s, std::regex(R"(\band\b)", std::regex::icase), "&&");
-  s = std::regex_replace(s, std::regex(R"(\bor\b)",  std::regex::icase), "||");
+  s = std::regex_replace(s, std::regex(R"(\bor\b)", std::regex::icase), "||");
   s = std::regex_replace(s, std::regex(R"(\bnot\b)", std::regex::icase), "!");
   s = singleEqToDoubleEq(s);
   return s;
@@ -65,10 +69,12 @@ int main() {
   demoStdRegexFails();
   std::cerr << "\n";
 
-  std::stringstream buf; buf << std::cin.rdbuf();
+  std::stringstream buf;
+  buf << std::cin.rdbuf();
   string input = buf.str();
   // strip a single trailing newline if present
-  if (!input.empty() && input.back() == '\n') input.pop_back();
+  if (!input.empty() && input.back() == '\n')
+    input.pop_back();
 
   std::cout << translateCondition(input);
   return 0;
