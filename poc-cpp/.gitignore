@@ -1,0 +1,12 @@
+# native CLI binaries (rebuild with clang++ — see README.md)
+stack_parser
+format_predicates
+lookbehind_demo
+predicate_parser
+pattern_detector
+code_generator
+*.o
+*.dSYM/
+
+# NOTE: core_wasm.mjs + core_wasm.wasm ARE committed so the demo runs without
+# installing Emscripten. Rebuild them with em++ (see README.md) if core.hpp changes.
