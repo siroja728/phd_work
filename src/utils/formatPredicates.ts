@@ -16,6 +16,9 @@ function normalizeCondition(raw: string): string {
       .replace(/\s+and\s+/gi, ' and ')
       .replace(/\s+or\s+/gi, ' or ')
       .replace(/\bnot\s+/gi, 'not ')
+      // Temporal operators — canonicalize 'until' → 'U' and leading 'next' → 'X'
+      .replace(/\s+(?:U|[Uu]ntil)\s+/, ' U ')
+      .replace(/^(?:X|[Nn]ext)\b/, 'X')
       // Collapse multiple spaces
       .replace(/\s{2,}/g, ' ')
       .trim()

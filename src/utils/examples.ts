@@ -33,6 +33,11 @@ export const EXAMPLES: Record<string, string> = {
 :loop { i > 0 } [ read(x); total = total + x; i = i - 1; goto loop; ]
 { i <= 0 } [ print(total); ]`,
 
+  // TEMPORAL — Until (p U q) loop + neXt step (sum of 1..n)
+  temporal: `{ true } [ n: int; sum: int = 0; read(n); ]
+{ n > 0 U n <= 0 } [ sum = sum + n; n = n - 1; ]
+{ X true } [ print(sum); ]`,
+
   // MEMO — semaphore-guarded shared resource inside a loop
   memo: `{ true } [ n: int; read(n); ]
 :step { n > 0 } [ n = n - 1; goto step; ] <sem: sharedData>

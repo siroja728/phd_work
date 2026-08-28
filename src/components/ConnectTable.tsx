@@ -27,6 +27,14 @@ export function ConnectTable({ transitions }: ConnectTableProps) {
             <td>{tr.from}</td>
             <td>
               <code className="condition-code">{tr.condition}</code>
+              {tr.temporal && (
+                <span
+                  className="temporal-badge"
+                  title={tr.temporal === 'U' ? 'Until (p U q)' : 'neXt step'}
+                >
+                  {tr.temporal}
+                </span>
+              )}
             </td>
             <td>{tr.to}</td>
           </tr>

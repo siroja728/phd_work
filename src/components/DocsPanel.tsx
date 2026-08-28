@@ -97,6 +97,8 @@ function EnContent() {
             <Row code="x > 0 and y < 10" desc={<>Logical AND <span style={{ opacity: 0.6 }}>(also: &amp;&amp;)</span></>} />
             <Row code="a = 0 or b = 0" desc={<>Logical OR <span style={{ opacity: 0.6 }}>(also: ||). Single = is treated as ==</span></>} />
             <Row code="not done" desc={<>Logical NOT <span style={{ opacity: 0.6 }}>(also: !)</span></>} />
+            <Row code="p U q" desc={<>Temporal <strong>Until</strong> — repeat this state while <code>p</code> holds, exit when <code>q</code>. Generates a <code>while</code> loop <span style={{ opacity: 0.6 }}>(word <code>until</code> also accepted)</span>.</>} />
+            <Row code="X r" desc={<>Temporal <strong>neXt</strong> — the incoming transition is an explicit next step, guarded by <code>r</code>. Bare <code>X</code> = unconditional next step <span style={{ opacity: 0.6 }}>(word <code>next</code> also accepted)</span>.</>} />
           </tbody>
         </table>
       </Section>
@@ -149,6 +151,13 @@ function EnContent() {
           name="Do-while loop (condition last)"
           desc={<>A body state followed by a condition state whose <code>goto</code> points back to the body — generates a <code>do … while</code> loop.</>}
           code={`{ true } [ read(n); sum = 0; ]\n:body { true } [ read(x); sum = sum + x; n = n - 1; ]\n{ n > 0 } [ goto body; ]\n{ n <= 0 } [ print(sum); ]`}
+        />
+        <Pattern
+          tag="U / X" tagClass="docs-tag-temporal"
+          name="Temporal operators (Until / neXt)"
+          desc={<><code>{'{ p U q }'}</code> turns the state into a self-loop → <code>while (p)</code>; <code>{'{ X r }'}</code> marks the next-step transition. A loop written this way needs no <code>goto</code>.</>}
+          code={`{ true } [ n: int; sum: int = 0; read(n); ]\n{ n > 0 U n <= 0 } [ sum = sum + n; n = n - 1; ]\n{ X true } [ print(sum); ]`}
+          extra={`// generated:\nwhile (n > 0) {\n    sum = sum + n;\n    n = n - 1;\n}\ncout << sum << endl;`}
         />
         <Pattern
           tag="MEMO" tagClass="docs-tag-memo"
@@ -218,6 +227,8 @@ function UkContent() {
             <Row code="x > 0 and y < 10" desc={<>Логічне І <span style={{ opacity: 0.6 }}>(також: &amp;&amp;)</span></>} />
             <Row code="a = 0 or b = 0" desc={<>Логічне АБО <span style={{ opacity: 0.6 }}>(також: ||). Одиночне = трактується як ==</span></>} />
             <Row code="not done" desc={<>Логічне НЕ <span style={{ opacity: 0.6 }}>(також: !)</span></>} />
+            <Row code="p U q" desc={<>Темпоральний <strong>Until</strong> — повторювати стан, поки істинне <code>p</code>, вийти коли <code>q</code>. Генерує цикл <code>while</code> <span style={{ opacity: 0.6 }}>(також приймається слово <code>until</code>)</span>.</>} />
+            <Row code="X r" desc={<>Темпоральний <strong>neXt</strong> — вхідний перехід є явним «наступним кроком» з охороною <code>r</code>. Самотнє <code>X</code> — безумовний наступний крок <span style={{ opacity: 0.6 }}>(також приймається слово <code>next</code>)</span>.</>} />
           </tbody>
         </table>
       </Section>
@@ -270,6 +281,13 @@ function UkContent() {
           name="Цикл do-while (умова в кінці)"
           desc={<>Стан тіла + стан умови, <code>goto</code> якого повертається до тіла — генерує цикл <code>do … while</code>.</>}
           code={`{ true } [ read(n); sum = 0; ]\n:body { true } [ read(x); sum = sum + x; n = n - 1; ]\n{ n > 0 } [ goto body; ]\n{ n <= 0 } [ print(sum); ]`}
+        />
+        <Pattern
+          tag="U / X" tagClass="docs-tag-temporal"
+          name="Темпоральні оператори (Until / neXt)"
+          desc={<><code>{'{ p U q }'}</code> робить стан самопетлею → <code>while (p)</code>; <code>{'{ X r }'}</code> позначає перехід наступного кроку. Такий цикл не потребує <code>goto</code>.</>}
+          code={`{ true } [ n: int; sum: int = 0; read(n); ]\n{ n > 0 U n <= 0 } [ sum = sum + n; n = n - 1; ]\n{ X true } [ print(sum); ]`}
+          extra={`// згенерований код:\nwhile (n > 0) {\n    sum = sum + n;\n    n = n - 1;\n}\ncout << sum << endl;`}
         />
         <Pattern
           tag="MEMO" tagClass="docs-tag-memo"

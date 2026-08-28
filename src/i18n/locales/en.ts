@@ -28,6 +28,7 @@ export default {
     dowhile:  'sum (DO3)',
     expr:     'A*(B+C/D)−E',
     floats:   'float average',
+    temporal: 'temporal (U, X)',
     memo:     'semaphore (MEMO)',
     parallel: 'parallel threads',
   },

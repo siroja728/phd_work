@@ -32,6 +32,38 @@ function parseDeclaration(action: string): { decl: VarDeclaration; assign?: stri
   return { decl, assign }
 }
 
+// ── Temporal operators ────────────────────────────────────────────────────────
+
+// Parse temporal operators inside a condition:
+//   { p U q }  (Until) — repeat this state while p holds, exit when q; produces a self-loop
+//   { X r }    (neXt)  — the transition into this state is an explicit next-step, guarded by r
+//   { X }              — bare next-step (unconditional)
+// Returns the entry guard plus, for Until, the self-loop guard.
+function parseTemporal(condRaw: string): {
+  entryCond: string
+  selfLoop: string | null
+  temporalEntry: 'X' | null
+} {
+  const cond = condRaw.trim() || 'true'
+
+  // Until:  p U q   ('U' uppercase, or the word 'until')
+  const uMatch = cond.match(/^(.+?)\s+(?:U|[Uu]ntil)\s+(.+)$/)
+  if (uMatch) {
+    const p = uMatch[1].trim() || 'true'
+    // q (uMatch[2]) documents the exit; operationally the loop exits when p is false
+    return { entryCond: p, selfLoop: p, temporalEntry: null }
+  }
+
+  // Next:  X r   |   bare X   |   next r
+  // Guarded so a comparison like "X == 5" (variable named X) is NOT treated as temporal.
+  const xMatch = cond.match(/^(?:X|[Nn]ext)(?:\s+(?![=<>!])(.+))?$/)
+  if (xMatch) {
+    return { entryCond: xMatch[1]?.trim() || 'true', selfLoop: null, temporalEntry: 'X' }
+  }
+
+  return { entryCond: cond, selfLoop: null, temporalEntry: null }
+}
+
 // ── Raw predicate ─────────────────────────────────────────────────────────────
 
 interface RawPredicate {
@@ -43,6 +75,8 @@ interface RawPredicate {
   declaredVars: VarDeclaration[]
   sem: string | null
   resource: string | null
+  selfLoop: string | null      // Until (p U q) → self-loop guard p
+  temporal: 'X' | null         // neXt operator on the incoming transition
 }
 
 function parseLine(line: string): RawPredicate {
@@ -83,15 +117,19 @@ function parseLine(line: string): RawPredicate {
     execActions.push(act)
   }
 
+  const temporal = parseTemporal(condMatch ? condMatch[1] : 'true')
+
   return {
     thread,
     label,
-    condition: condMatch ? condMatch[1].trim() : 'true',
+    condition: temporal.entryCond,
     actions: execActions.join('; '),
     gotos,
     declaredVars,
     sem: memoMatch ? memoMatch[1].trim() : null,
     resource: memoMatch ? memoMatch[2].trim() : null,
+    selfLoop: temporal.selfLoop,
+    temporal: temporal.temporalEntry,
   }
 }
 
@@ -162,7 +200,17 @@ export function parsePredicates(text: string): ParseResult {
     // Sequential transition: only within the same thread group
     if (posInGroup > 0) {
       const prevId = gIdx[posInGroup - 1] + 1
-      transitions.push({ from: prevId, condition: p.condition, to: id })
+      transitions.push({
+        from: prevId,
+        condition: p.condition,
+        to: id,
+        ...(p.temporal ? { temporal: p.temporal } : {}),
+      })
+    }
+
+    // Until (p U q): self-loop on this state — detected as a DO2 (while) pattern
+    if (p.selfLoop) {
+      transitions.push({ from: id, condition: p.selfLoop, to: id, temporal: 'U' })
     }
 
     // Goto transitions — resolved within the same thread's label space

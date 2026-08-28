@@ -226,6 +226,7 @@ body {
 .mark-true  { color: var(--green); font-weight: 700; }
 .mark-false { color: var(--text-muted); }
 .condition-code { font-family: var(--mono); font-size: 11px; color: var(--syn-cond); }
+.temporal-badge { display: inline-block; margin-left: 6px; font-family: var(--mono); font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: #2a1040; color: #d8a8ff; border: 1px solid #4a2080; letter-spacing: 0.04em; }
 
 /* Stack trace */
 .expr-block { margin-bottom: 20px; }
@@ -605,6 +606,7 @@ body {
 .docs-tag-do2  { background: color-mix(in srgb, var(--green) 15%, transparent);      color: var(--green); }
 .docs-tag-do3  { background: color-mix(in srgb, #34d399 15%, transparent);           color: #34d399; }
 .docs-tag-memo { background: color-mix(in srgb, var(--yellow) 15%, transparent);     color: var(--yellow); }
+.docs-tag-temporal { background: color-mix(in srgb, #d8a8ff 15%, transparent);       color: #d8a8ff; }
 
 .docs-pattern-body {
   flex: 1;

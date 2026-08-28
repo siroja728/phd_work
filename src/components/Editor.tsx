@@ -103,6 +103,8 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
             <option value="while">{t('examples.while')}</option>
             <option value="dowhile">{t('examples.dowhile')}</option>
             <option value="expr">{t('examples.expr')}</option>
+            <option value="floats">{t('examples.floats')}</option>
+            <option value="temporal">{t('examples.temporal')}</option>
             <option value="memo">{t('examples.memo')}</option>
             <option value="parallel">{t('examples.parallel')}</option>
           </select>

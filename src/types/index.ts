@@ -15,6 +15,7 @@ export interface AutomatonTransition {
   from: number
   condition: string
   to: number
+  temporal?: 'X' | 'U' // temporal operator that produced this edge: X = next-step, U = until (self-loop)
 }
 
 export interface MemoEntry {
