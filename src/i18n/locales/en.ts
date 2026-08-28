@@ -11,6 +11,7 @@ export default {
     examples: 'examples…',
     run: 'Run',
     format: 'Format',
+    fix_errors: 'Fix errors before running',
     lines_one: '{{count}} line',
     lines_few: '{{count}} lines',
     lines_many: '{{count}} lines',
@@ -116,6 +117,12 @@ export default {
     label: 'Language',
     uk: 'Українська',
     en: 'English',
+  },
+
+  // Engine badge
+  engine: {
+    wasm_title: 'C++ core running as WebAssembly',
+    ts_title: 'TypeScript fallback',
   },
 
   // Automaton diagram

@@ -9,6 +9,7 @@ export default {
     examples: 'приклади…',
     run: 'Виконати',
     format: 'Форматувати',
+    fix_errors: 'Виправте помилки перед запуском',
     lines_one: '{{count}} рядок',
     lines_few: '{{count}} рядки',
     lines_many: '{{count}} рядків',
@@ -105,6 +106,11 @@ export default {
     label: 'Мова',
     uk:    'Українська',
     en:    'English',
+  },
+
+  engine: {
+    wasm_title: 'Ядро C++ виконується як WebAssembly',
+    ts_title:   'Резервний рушій TypeScript',
   },
 
   diagram: {

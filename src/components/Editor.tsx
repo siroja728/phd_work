@@ -115,7 +115,7 @@ export function Editor({ value, onChange, onRun }: EditorProps) {
           <button
             className={`run-btn${diagnostics.length > 0 ? ' run-btn--blocked' : ''}`}
             onClick={handleRun}
-            title={diagnostics.length > 0 ? 'Fix errors before running' : 'Ctrl+Enter'}
+            title={diagnostics.length > 0 ? t('editor.fix_errors') : 'Ctrl+Enter'}
           >
             <span className="run-icon">{diagnostics.length > 0 ? '✕' : '▶'}</span>
             <span>{t('editor.run')}</span>
